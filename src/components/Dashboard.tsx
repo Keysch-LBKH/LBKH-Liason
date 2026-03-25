@@ -9,6 +9,7 @@ import { MindMap } from './MindMap';
 import { PitchDeck } from './PitchDeck';
 import { Footer } from './Footer';
 import { AnimatePresence, motion } from 'motion/react';
+import { TourSpotlight, TourLaunchButton } from './TourOverlay';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -213,7 +214,7 @@ export function Dashboard({ branding }: DashboardProps) {
   return (
     <div className="flex flex-col h-screen krambu-bg wireframe-grid">
       {/* Header */}
-      <header className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-purple-500/30 flex justify-between items-center shadow-2xl relative z-10">
+      <header data-tour-id="tour-header" className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-purple-500/30 flex justify-between items-center shadow-2xl relative z-10">
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2 group">
             {branding.logo ? (
@@ -249,7 +250,7 @@ export function Dashboard({ branding }: DashboardProps) {
           <a href="#" className="transition-colors hover:text-white">Services</a>
           <a href="#" className="transition-colors hover:text-white">Shop</a>
           <a href="#" className="transition-colors hover:text-white">Press</a>
-          <Link to="/settings" className="transition-colors flex items-center gap-2 hover:text-white">
+          <Link data-tour-id="tour-settings-link" to="/settings" className="transition-colors flex items-center gap-2 hover:text-white">
             <Settings className="w-3 h-3" style={{ color: branding.primaryColor }} />
             Settings
           </Link>
@@ -312,6 +313,7 @@ export function Dashboard({ branding }: DashboardProps) {
           </div>
 
           <button 
+            data-tour-id="tour-benchmark"
             onClick={() => setBenchmarkMode(!benchmarkMode)}
             className={cn(
               "flex items-center gap-3 px-4 py-2 rounded-lg border transition-all group",
@@ -330,6 +332,7 @@ export function Dashboard({ branding }: DashboardProps) {
               <span className="text-[8px] font-mono opacity-60 uppercase">{benchmarkMode ? 'Engaged' : 'Siloed'}</span>
             </div>
           </button>
+          <TourLaunchButton />
           <div className="hidden md:flex flex-col items-end gap-1">
             <div className="flex items-center gap-2 text-[10px] font-mono">
               <div 
@@ -376,6 +379,7 @@ export function Dashboard({ branding }: DashboardProps) {
           </div>
 
           <div 
+            data-tour-id="tour-disclaimer"
             className="data-card p-6 bg-opacity-10 border-opacity-40"
             style={{ 
               backgroundColor: branding.primaryColor,
@@ -404,7 +408,7 @@ export function Dashboard({ branding }: DashboardProps) {
         </aside>
 
         {/* Chat Area */}
-        <section className="flex-1 flex flex-col data-card overflow-hidden border-white/10 min-w-0">
+        <section data-tour-id="tour-chat" className="flex-1 flex flex-col data-card overflow-hidden border-white/10 min-w-0">
           <div 
             ref={scrollRef}
             className="flex-1 overflow-y-auto p-8 space-y-8 scroll-smooth"
@@ -524,6 +528,7 @@ export function Dashboard({ branding }: DashboardProps) {
         <aside className="w-full lg:w-96 flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2">
           {/* Mind Map Section */}
           <div 
+            data-tour-id="tour-mindmap"
             className="data-card p-6 border-opacity-20"
             style={{ borderColor: branding.primaryColor }}
           >
@@ -544,6 +549,7 @@ export function Dashboard({ branding }: DashboardProps) {
 
           {/* Podcast Section */}
           <div 
+            data-tour-id="tour-podcast"
             className="data-card p-6 border-opacity-20"
             style={{ borderColor: branding.primaryColor }}
           >
@@ -577,6 +583,7 @@ export function Dashboard({ branding }: DashboardProps) {
 
           {/* Pitch Deck Section */}
           <div 
+            data-tour-id="tour-pitchdeck"
             className="data-card p-6 border-opacity-20"
             style={{ borderColor: branding.primaryColor }}
           >
