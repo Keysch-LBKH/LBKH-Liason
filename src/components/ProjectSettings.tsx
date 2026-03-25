@@ -40,18 +40,18 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   const location = useLocation();
   
   const [sources, setSources] = useState<SourceFile[]>([
-    { id: '1', name: 'Environmental_Impact_2025.pdf', type: 'PDF', size: '2.4 MB', status: 'ready', content: 'This report details the environmental impact of the Bonner AI Factory. Sensitive data like [REDACTED] has been noted. The PUE is projected at 1.09.' },
-    { id: '2', name: 'Cooling_System_Specs.docx', type: 'DOCX', size: '1.1 MB', status: 'redacted', content: 'Technical specifications for the closed-loop cooling system. The system uses [REDACTED] to ensure zero water waste.' }
+    { id: '1', name: 'Sample_Document_1.pdf', type: 'PDF', size: '—', status: 'ready', content: 'Upload your project documents here. Use the redaction tool to remove sensitive information before going live.' },
+    { id: '2', name: 'Sample_Document_2.docx', type: 'DOCX', size: '—', status: 'ready', content: 'Add additional source documents to expand the AI knowledge base for this project.' }
   ]);
 
   const [benchmarks, setBenchmarks] = useState<{ id: string; metric: string; target: string; current: string }[]>([
-    { id: '1', metric: 'PUE', target: '1.09', current: '1.12' },
-    { id: '2', metric: 'Water Usage', target: 'Net-Zero', current: '0.05 gal/kWh' }
+    { id: '1', metric: 'Benchmark Metric 1', target: 'Target', current: 'Current' },
+    { id: '2', metric: 'Benchmark Metric 2', target: 'Target', current: 'Current' }
   ]);
 
   const [visuals, setVisuals] = useState<{ id: string; name: string; type: 'logo' | 'chart' | 'render' }[]>([
-    { id: '1', name: 'Krambu_Primary_Logo.svg', type: 'logo' },
-    { id: '2', name: 'Factory_Render_North.png', type: 'render' }
+    { id: '1', name: 'Project_Logo.svg', type: 'logo' },
+    { id: '2', name: 'Project_Visual.png', type: 'render' }
   ]);
 
   const handleSave = () => {
@@ -425,7 +425,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                       <div className="data-card p-6 border-cyan-500/20 bg-cyan-500/5">
                         <h3 className="text-xs font-black uppercase tracking-widest text-cyan-400 mb-4">Benchmark Testing</h3>
                         <p className="text-[11px] text-white/60 leading-relaxed mb-6">
-                          Simulate AI factory performance against these benchmarks to generate predictive reports.
+                          Simulate project performance against these benchmarks to generate predictive reports.
                         </p>
                         <button className="w-full py-3 bg-cyan-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest glow-cyan hover:bg-cyan-500 transition-all">
                           Run Simulation
@@ -509,7 +509,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                         value={branding.companyName}
                         onChange={(e) => setBranding({ ...branding, companyName: e.target.value })}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-colors"
-                        placeholder="e.g. KRAMBU"
+                        placeholder="e.g. YOUR COMPANY"
                       />
                     </div>
 

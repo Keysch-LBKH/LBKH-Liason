@@ -42,23 +42,23 @@ export function PitchDeck({ branding, onClose }: { branding: Branding, onClose: 
 
   const slides: Slide[] = [
     {
-      title: `${branding.companyName} Bonner Mill`,
-      subtitle: "Regenerative AI Infrastructure",
+      title: `${branding.companyName} Project`,
+      subtitle: "Project Overview",
       icon: <Shield className="w-8 h-8" style={{ color: branding.primaryColor }} />,
       image: "https://picsum.photos/seed/northwest-mountains-1/1200/800",
       content: (
         <div className="space-y-4">
           <p className="text-xl text-white/80 leading-relaxed">
-            A strategic transition of the legacy United Forest Products industrial site into a high-density, 100MW High-Performance Computing (HPC) campus.
+            Configure your pitch deck content by uploading project documents in the Settings panel.
           </p>
           <div className="grid grid-cols-2 gap-4 mt-8">
             <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-              <span className="block text-2xl font-black" style={{ color: branding.primaryColor }}>100MW</span>
-              <span className="text-[10px] uppercase tracking-widest text-white/40">Phase 1 Capacity</span>
+              <span className="block text-2xl font-black" style={{ color: branding.primaryColor }}>—</span>
+              <span className="text-[10px] uppercase tracking-widest text-white/40">Key Metric 1</span>
             </div>
             <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-              <span className="block text-2xl font-black" style={{ color: branding.secondaryColor }}>64 ACRES</span>
-              <span className="text-[10px] uppercase tracking-widest text-white/40">Industrial Site</span>
+              <span className="block text-2xl font-black" style={{ color: branding.secondaryColor }}>—</span>
+              <span className="text-[10px] uppercase tracking-widest text-white/40">Key Metric 2</span>
             </div>
           </div>
         </div>
@@ -68,11 +68,11 @@ export function PitchDeck({ branding, onClose }: { branding: Branding, onClose: 
       title: "The Vision",
       subtitle: "Industrial Revitalization",
       icon: <TrendingUp className="w-8 h-8" style={{ color: branding.secondaryColor }} />,
-      image: "https://picsum.photos/seed/blackfoot-river-1/1200/800",
+      image: "https://picsum.photos/seed/project-vision-1/1200/800",
       content: (
         <div className="space-y-4">
           <p className="text-lg text-white/70">
-            Transforming a "brownfield" (derelict mill) into a high-tech "green" facility that stabilizes property values and contributes a stable tax base to local schools.
+            Describe the vision and long-term goals of your project here. Upload your documents in Settings to populate this content.
           </p>
           <ul className="space-y-3 mt-6">
             <li className="flex items-center gap-3 text-sm text-white/90">
@@ -122,13 +122,13 @@ export function PitchDeck({ branding, onClose }: { branding: Branding, onClose: 
     },
     {
       title: "Net-Zero Water",
-      subtitle: "Protecting the Blackfoot",
+      subtitle: "Environmental Commitment",
       icon: <Droplets className="w-8 h-8" style={{ color: branding.secondaryColor }} />,
       image: "https://picsum.photos/seed/montana-river-1/1200/800",
       content: (
         <div className="space-y-4">
           <p className="text-lg text-white/70">
-            Our facility is designed to have zero impact on the local water table or the Blackfoot River ecosystem.
+            Our facility is designed with environmental responsibility at its core. Upload your project documents to populate specific details.
           </p>
           <div className="grid grid-cols-1 gap-3 mt-6">
             <div className="flex items-start gap-4 p-3 bg-white/5 rounded-lg border border-white/10">
@@ -157,7 +157,7 @@ export function PitchDeck({ branding, onClose }: { branding: Branding, onClose: 
       content: (
         <div className="space-y-4">
           <p className="text-lg text-white/70">
-            Advanced sound attenuation ensures the facility remains a quiet neighbor for the Bonner community.
+            Advanced engineering ensures the facility remains a responsible neighbor to the surrounding community.
           </p>
           <div className="grid grid-cols-1 gap-3 mt-6">
             <div className="flex items-start gap-4 p-3 bg-white/5 rounded-lg border border-white/10">
@@ -186,7 +186,7 @@ export function PitchDeck({ branding, onClose }: { branding: Branding, onClose: 
       content: (
         <div className="space-y-4">
           <p className="text-lg text-white/70">
-            The project brings long-term economic stability and investment to the Bonner area.
+            The project brings long-term economic stability and investment to the local area.
           </p>
           <div className="grid grid-cols-2 gap-4 mt-8">
             <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
@@ -209,7 +209,7 @@ export function PitchDeck({ branding, onClose }: { branding: Branding, onClose: 
       content: (
         <div className="space-y-4">
           <p className="text-lg text-white/70">
-            {branding.companyName} is committed to being a cornerstone of Bonner's technological and economic future.
+            {branding.companyName} is committed to being a cornerstone of the community's technological and economic future.
           </p>
           <div className="mt-12 flex justify-center">
             <div 

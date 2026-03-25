@@ -63,7 +63,7 @@ export function ComingSoon({ branding }: ComingSoonProps) {
             <span className="text-[11px] font-black uppercase tracking-[0.2em]">Status: System Initializing</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase leading-tight">
-            Regenerative AI <br />
+            Project Liaison <br />
             <span 
               className="text-transparent bg-clip-text"
               style={{ backgroundImage: `linear-gradient(to right, ${branding.primaryColor}, ${branding.secondaryColor})` }}
@@ -72,7 +72,7 @@ export function ComingSoon({ branding }: ComingSoonProps) {
             </span>
           </h1>
           <p className="text-lg text-white/40 leading-relaxed max-w-lg mx-auto">
-            The Bonner AI Factory project portal is currently under technical configuration. We are finalizing the grounding repository and security protocols.
+            This project portal is currently under configuration. Upload your source documents and configure branding in the Control Panel before going live.
           </p>
         </div>
 

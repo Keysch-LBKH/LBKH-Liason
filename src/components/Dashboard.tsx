@@ -37,7 +37,7 @@ export function Dashboard({ branding }: DashboardProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'model',
-      text: "I am the Krambu Project Liaison. I am here to provide technical data regarding the Bonner AI Factory project. How can I assist you with project specifics today?",
+      text: "I am the Project Liaison. I am here to provide technical data regarding this project. How can I assist you today?",
       timestamp: new Date(),
     },
   ]);
@@ -556,9 +556,9 @@ export function Dashboard({ branding }: DashboardProps) {
             </div>
             <div className="space-y-3">
               {[
-                { title: "Ep 01: The Bonner Vision", duration: "12:45", date: "Mar 15" },
-                { title: "Ep 02: Powering the Future", duration: "18:20", date: "Mar 18" },
-                { title: "Ep 03: Water & Ecosystems", duration: "15:10", date: "Mar 21" }
+                { title: "Ep 01: Project Overview", duration: "12:45", date: "" },
+                { title: "Ep 02: Coming Soon", duration: "", date: "" },
+                { title: "Ep 03: Coming Soon", duration: "", date: "" }
               ].map((p, idx) => (
                 <div 
                   key={idx} 
@@ -593,7 +593,7 @@ export function Dashboard({ branding }: DashboardProps) {
               style={{ borderColor: branding.primaryColor + '40' }}
             >
               <img 
-                src="https://picsum.photos/seed/krambu-deck/400/225" 
+                src="https://picsum.photos/seed/project-deck/400/225" 
                 alt="Pitch Deck Preview" 
                 className="w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-700"
                 referrerPolicy="no-referrer"

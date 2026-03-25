@@ -8,10 +8,10 @@ import { LiveEvent } from './components/LiveEvent';
 export default function App() {
   const [isLive, setIsLive] = useState(false);
   const [branding, setBranding] = useState({
-    logo: '', // Empty means use default Krambu logo
-    primaryColor: '#a855f7', // Purple-500
-    secondaryColor: '#06b6d4', // Cyan-500
-    companyName: 'KRAMBU'
+    logo: '', // Upload a logo via the Settings page
+    primaryColor: '#a855f7', // Default primary color — configurable in Settings
+    secondaryColor: '#06b6d4', // Default secondary color — configurable in Settings
+    companyName: 'YOUR COMPANY'
   });
 
   return (

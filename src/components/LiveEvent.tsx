@@ -35,7 +35,7 @@ interface Topic {
 
 export function LiveEvent({ branding }: LiveEventProps) {
   const [questions, setQuestions] = useState<SMSQuestion[]>([
-    { id: '1', phone: '406-XXX-1234', text: 'How will the cooling system affect the Blackfoot River?', timestamp: new Date(), status: 'answered', answer: 'The system is 100% closed-loop and secondary-contained, meaning zero industrial discharge into the river or ground.' },
+    { id: '1', phone: 'XXX-XXX-1234', text: 'What are the key environmental safeguards for this project?', timestamp: new Date(), status: 'answered', answer: 'Upload your source documents in Settings to enable AI-generated answers for your project.' },
     { id: '2', phone: '406-XXX-5678', text: 'What about the noise levels for the school across the street?', timestamp: new Date(), status: 'processing' },
     { id: '3', phone: '406-XXX-9012', text: 'Will my property taxes go down?', timestamp: new Date(), status: 'queued' },
   ]);
@@ -418,7 +418,7 @@ export function LiveEvent({ branding }: LiveEventProps) {
                     <h3 className="text-xs font-black uppercase tracking-widest text-white">Current Focus: Water Usage</h3>
                   </div>
                   <p className="text-sm text-white/60 leading-relaxed italic">
-                    "Analyzing community concerns regarding the Blackfoot River. Cross-referencing technical specifications MT-BNR-2026-041..."
+                    "Analyzing community concerns. Cross-referencing uploaded technical specifications..."
                   </p>
                   <div className="space-y-2">
                     <div 
@@ -450,8 +450,8 @@ export function LiveEvent({ branding }: LiveEventProps) {
                     Latest Generated Answers
                   </p>
                   {[
-                    { topic: 'Noise Levels', answer: 'Krambu uses liquid cooling and multi-stage rubber dampeners, reducing noise to 36 dBA (whisper-level) at 1000 feet.' },
-                    { topic: 'Grid Impact', answer: 'Krambu utilizes a direct PPA with Energy Keepers and an on-site BESS (Battery) system to "peak-shave," protecting the local residential grid.' }
+                    { topic: 'Sample Topic 1', answer: 'Configure your source documents in the Settings panel to generate real answers for your project.' },
+                    { topic: 'Sample Topic 2', answer: 'Once documents are uploaded and the portal is set to Live, the AI will generate grounded answers from your materials.' }
                   ].map((a, i) => (
                     <div 
                       key={i} 
