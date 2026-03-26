@@ -10,7 +10,7 @@ import { TourOverlay } from './components/TourOverlay';
 export default function App() {
   const [isLive, setIsLive] = useState(false);
   const [branding, setBranding] = useState({
-    logo: '', // Upload a logo via the Settings page
+    logo: '/lbkh-logo.png', // Default LBKH logo — replace via Brand Identity in Settings
     primaryColor: '#a855f7', // Default primary color — configurable in Settings
     secondaryColor: '#06b6d4', // Default secondary color — configurable in Settings
     companyName: 'YOUR COMPANY'

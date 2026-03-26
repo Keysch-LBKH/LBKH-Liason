@@ -47,6 +47,11 @@ export function ComingSoon({ branding }: ComingSoonProps) {
             >
               {branding.companyName}
             </h1>
+            {branding.companyName === 'YOUR COMPANY' && (
+              <p className="text-[10px] font-mono uppercase tracking-widest mt-2 px-3 py-1 rounded border border-yellow-500/30 bg-yellow-500/10 text-yellow-400/80">
+                ⚠ Update your branding package in the Control Panel
+              </p>
+            )}
             <span 
               className="text-xs font-mono uppercase tracking-[0.5em] mt-4"
               style={{ color: branding.secondaryColor }}

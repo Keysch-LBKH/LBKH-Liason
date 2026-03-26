@@ -109,6 +109,11 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
               <span className="text-2xl font-black tracking-tighter uppercase leading-none bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">
                 {branding.companyName}
               </span>
+              {branding.companyName === 'YOUR COMPANY' && (
+                <span className="text-[8px] font-mono uppercase tracking-widest text-yellow-400/80">
+                  ⚠ Update branding package
+                </span>
+              )}
               <span 
                 className="text-[9px] font-mono uppercase tracking-[0.3em] mt-1"
                 style={{ color: branding.secondaryColor }}
