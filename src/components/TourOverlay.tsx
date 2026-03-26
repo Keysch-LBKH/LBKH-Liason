@@ -177,7 +177,7 @@ interface TourSpotlightProps {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
-  as?: keyof JSX.IntrinsicElements;
+  as?: React.ElementType;
 }
 
 export function TourSpotlight({ tourId, children, className = '', style = {}, as: Tag = 'div' }: TourSpotlightProps) {
