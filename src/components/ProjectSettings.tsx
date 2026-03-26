@@ -101,6 +101,27 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
     }
   };
 
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  const handleResetDemo = async () => {
+    setResetting(true);
+    try {
+      // Delete all files from R2
+      for (const file of sources) {
+        await deleteDocument(file.id);
+      }
+      setSources([]);
+      setSelectedFile(null);
+      setIsLive(false);
+      setShowResetConfirm(false);
+    } catch (err: any) {
+      setR2Error(err.message);
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const [benchmarks, setBenchmarks] = useState<{ id: string; metric: string; target: string; current: string }[]>([
     { id: '1', metric: 'Benchmark Metric 1', target: 'Target', current: 'Current' },
     { id: '2', metric: 'Benchmark Metric 2', target: 'Target', current: 'Current' }
@@ -351,6 +372,15 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                         <Upload className="w-4 h-4" />
                         {r2Loading ? 'Uploading...' : 'Upload Files'}
                       </button>
+                      <button
+                        onClick={() => setShowResetConfirm(true)}
+                        disabled={r2Loading || resetting}
+                        className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                        title="Wipe all documents and reset to Coming Soon"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        Reset Demo
+                      </button>
                     </div>
                   </div>
 
@@ -436,11 +466,18 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                             </div>
                           </div>
 
-                          {redactionMode && (
+                          <div className="px-4 py-3 bg-red-950/40 border-b border-red-500/30 flex items-start gap-3">
+                              <Lock className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                              <p className="text-[10px] font-black uppercase tracking-widest text-red-400 leading-relaxed">
+                                Permanent Redaction Notice — Redaction destroys the underlying information. It cannot be undone or recovered. To re-introduce redacted material, the original document must be deleted and re-uploaded.
+                              </p>
+                            </div>
+
+                  {redactionMode && (
                             <div className="p-3 bg-red-500/10 border-b border-red-500/20 flex items-center gap-3">
                               <Scissors className="w-4 h-4 text-red-400" />
                               <p className="text-[10px] font-black uppercase tracking-widest text-red-400">
-                                Warning: Redaction is destructive. If done incorrectly, you must reload the document and start over.
+                                Redaction mode active — click any word to redact it permanently.
                               </p>
                             </div>
                           )}
@@ -702,6 +739,60 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
           </AnimatePresence>
         </main>
       </div>
+      {/* Reset Demo Confirmation Modal */}
+      <AnimatePresence>
+        {showResetConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-950 border border-red-500/40 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 bg-red-500/10 rounded-xl">
+                  <RotateCcw className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Reset Demo</h3>
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">This action cannot be undone</p>
+                </div>
+              </div>
+              <div className="space-y-4 mb-8">
+                <p className="text-sm text-white/70 leading-relaxed">
+                  This will permanently delete all uploaded documents from R2 storage and set the app back to <span className="text-orange-400 font-bold">Coming Soon</span> mode.
+                </p>
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-red-400 leading-relaxed">
+                    ⚠ All source documents, redactions, and grounding data will be wiped. The AI will have no knowledge base until new documents are uploaded.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="flex-1 py-3 bg-white/5 border border-white/10 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleResetDemo}
+                  disabled={resetting}
+                  className="flex-1 py-3 bg-red-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-red-500 transition-all disabled:opacity-50"
+                >
+                  {resetting ? 'Resetting...' : 'Yes, Reset Demo'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Footer branding={branding} />
     </div>
   );
