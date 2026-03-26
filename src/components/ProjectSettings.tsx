@@ -3,7 +3,8 @@ import { Shield, Upload, Link as LinkIcon, FileText, BarChart3, Palette, Globe, 
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Footer } from './Footer';
-import { uploadDocument, listDocuments, deleteDocument, R2Document } from '../services/r2Service';
+import { uploadDocument, listDocuments, deleteDocument } from '../services/r2Service';
+import { DocumentViewer } from './DocumentViewer';
 
 interface Branding {
   logo: string;
@@ -27,7 +28,8 @@ interface SourceFile {
   type: string;
   size: string;
   status: 'ready' | 'processing' | 'redacted';
-  content?: string;
+  publicUrl: string;
+  redacted: boolean;
 }
 
 export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: ProjectSettingsProps) {
@@ -35,7 +37,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   const [showSaved, setShowSaved] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<SourceFile | null>(null);
-  const [redactionMode, setRedactionMode] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [showModeSwitcher, setShowModeSwitcher] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,8 +61,9 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
       name: d.name,
       type: d.type,
       size: d.size > 0 ? `${(d.size / 1024).toFixed(1)} KB` : '—',
-      status: 'ready' as const,
-      content: '',
+      status: (d.redacted ? 'redacted' : 'ready') as SourceFile['status'],
+      publicUrl: d.publicUrl || '',
+      redacted: d.redacted || false,
     }));
 
   // Load both folders from R2 on mount
@@ -116,8 +119,18 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
     try {
       await deleteDocument(key);
       setSources((prev) => prev.filter((s) => s.id !== key));
-      if (selectedFile?.id === key) setSelectedFile(null);
+      if (selectedFile?.id === key) { setSelectedFile(null); setViewerOpen(false); }
     } catch (err: any) { setSourcesError(err.message); }
+  };
+
+  const handleOpenDocument = (file: SourceFile) => {
+    setSelectedFile(file);
+    setViewerOpen(true);
+  };
+
+  const handleViewerSaved = (key: string, publicUrl: string) => {
+    // Update the file's publicUrl and mark as redacted in the local list
+    setSources((prev) => prev.map((s) => s.id === key ? { ...s, publicUrl, redacted: true, status: 'redacted' } : s));
   };
 
   const handleDeleteBenchmarkFile = async (key: string) => {
@@ -163,35 +176,6 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
 
   const filteredSources = sources.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredBenchmarkFiles = benchmarkFiles.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
-
-  const handleRedact = (fileId: string, wordIndex: number) => {
-    if (!redactionMode) return;
-    
-    setSources(prev => prev.map(file => {
-      if (file.id === fileId && file.content) {
-        const words = file.content.split(' ');
-        const wordToRedact = words[wordIndex];
-        words[wordIndex] = "-".repeat(wordToRedact.length);
-        return {
-          ...file,
-          content: words.join(' '),
-          status: 'redacted' as const
-        };
-      }
-      return file;
-    }));
-    
-    if (selectedFile?.id === fileId && selectedFile.content) {
-      const words = selectedFile.content.split(' ');
-      const wordToRedact = words[wordIndex];
-      words[wordIndex] = "-".repeat(wordToRedact.length);
-      setSelectedFile({
-        ...selectedFile,
-        content: words.join(' '),
-        status: 'redacted'
-      });
-    }
-  };
 
   return (
     <div className="flex flex-col h-screen krambu-bg wireframe-grid overflow-hidden">
@@ -408,11 +392,11 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 h-[calc(100vh-250px)]">
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-8" style={{ height: 'calc(100vh - 300px)' }}>
                     {/* File List */}
                     <div className="xl:col-span-1 data-card overflow-y-auto border-white/10 p-0">
                       <div className="p-4 border-b border-white/10 bg-white/5">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Repository Files ({filteredSources.length})</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Source Files ({filteredSources.length})</p>
                       </div>
                       {sourcesError && (
                         <div className="p-3 bg-red-500/10 border-b border-red-500/20 text-[10px] font-mono text-red-400 uppercase tracking-widest">
@@ -433,20 +417,29 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                         {filteredSources.map((file) => (
                           <button
                             key={file.id}
-                            onClick={() => setSelectedFile(file)}
-                            className={`w-full p-4 flex items-center gap-4 hover:bg-white/5 transition-all text-left ${selectedFile?.id === file.id ? 'bg-teal-500/10 border-l-4 border-teal-400' : ''}`}
+                            onClick={() => handleOpenDocument(file)}
+                            className={`w-full p-4 flex items-center gap-3 hover:bg-white/5 transition-all text-left ${
+                              selectedFile?.id === file.id && viewerOpen ? 'bg-teal-500/10 border-l-4 border-teal-400' : ''
+                            }`}
                           >
-                            <div className={`p-2 rounded-lg ${file.status === 'redacted' ? 'bg-red-500/10' : 'bg-cyan-500/10'}`}>
-                              <FileText className={`w-5 h-5 ${file.status === 'redacted' ? 'text-red-400' : 'text-cyan-400'}`} />
+                            <div className={`p-2 rounded-lg shrink-0 ${
+                              file.redacted ? 'bg-red-500/10' : 'bg-cyan-500/10'
+                            }`}>
+                              <FileText className={`w-4 h-4 ${
+                                file.redacted ? 'text-red-400' : 'text-cyan-400'
+                              }`} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-white truncate">{file.name}</p>
                               <p className="text-[10px] font-mono text-white/30 uppercase">{file.type} • {file.size}</p>
+                              {file.publicUrl && (
+                                <p className="text-[9px] font-mono text-teal-400/60 truncate mt-0.5">↗ Public link set</p>
+                              )}
                             </div>
-                            {file.status === 'redacted' && <Lock className="w-3 h-3 text-red-400" />}
+                            {file.redacted && <Lock className="w-3 h-3 text-red-400 shrink-0" />}
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDeleteSourceFile(file.id); }}
-                              className="p-1 text-white/20 hover:text-red-400 transition-colors"
+                              className="p-1 text-white/20 hover:text-red-400 transition-colors shrink-0"
                               title="Delete file"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -456,74 +449,25 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                       </div>
                     </div>
 
-                    {/* Document Viewer / Redaction */}
+                    {/* Document Viewer */}
                     <div className="xl:col-span-2 data-card border-white/10 flex flex-col p-0 overflow-hidden">
-                      {selectedFile ? (
-                        <>
-                          <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <FileText className="w-4 h-4 text-cyan-400" />
-                              <span className="text-xs font-bold text-white uppercase tracking-widest">{selectedFile.name}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {selectedFile.status === 'redacted' && (
-                                <button 
-                                  onClick={() => window.location.reload()}
-                                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/40 hover:text-white"
-                                >
-                                  <RotateCcw className="w-3 h-3" />
-                                  Reload
-                                </button>
-                              )}
-                              <button 
-                                onClick={() => setRedactionMode(!redactionMode)}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                  redactionMode ? 'bg-red-600 text-white glow-red' : 'bg-white/5 border border-white/10 text-white/40 hover:text-white'
-                                }`}
-                              >
-                                <Scissors className="w-3 h-3" />
-                                {redactionMode ? 'Exit Redaction' : 'Redact Mode'}
-                              </button>
-                              <button className="p-1.5 bg-white/5 border border-white/10 rounded-lg text-white/40 hover:text-white">
-                                <Download className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="px-4 py-3 bg-red-950/40 border-b border-red-500/30 flex items-start gap-3">
-                              <Lock className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                              <p className="text-[10px] font-black uppercase tracking-widest text-red-400 leading-relaxed">
-                                Permanent Redaction Notice — Redaction destroys the underlying information. It cannot be undone or recovered. To re-introduce redacted material, the original document must be deleted and re-uploaded.
-                              </p>
-                            </div>
-
-                  {redactionMode && (
-                            <div className="p-3 bg-red-500/10 border-b border-red-500/20 flex items-center gap-3">
-                              <Scissors className="w-4 h-4 text-red-400" />
-                              <p className="text-[10px] font-black uppercase tracking-widest text-red-400">
-                                Redaction mode active — click any word to redact it permanently.
-                              </p>
-                            </div>
-                          )}
-
-                          <div className="flex-1 p-8 overflow-y-auto font-mono text-sm leading-relaxed text-white/70 bg-black/20">
-                            <div className="max-w-2xl mx-auto flex flex-wrap gap-x-1 gap-y-2">
-                              {selectedFile.content?.split(' ').map((word, i) => (
-                                <span 
-                                  key={i}
-                                  onClick={() => handleRedact(selectedFile.id, i)}
-                                  className={redactionMode ? 'hover:bg-red-500/20 cursor-crosshair transition-colors px-1 rounded' : ''}
-                                >
-                                  {word}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </>
+                      {viewerOpen && selectedFile ? (
+                        <DocumentViewer
+                          docKey={selectedFile.id}
+                          docName={selectedFile.name}
+                          docType={selectedFile.type}
+                          initialPublicUrl={selectedFile.publicUrl}
+                          isRedacted={selectedFile.redacted}
+                          onClose={() => { setViewerOpen(false); setSelectedFile(null); }}
+                          onSaved={handleViewerSaved}
+                        />
                       ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-white/20 gap-4">
+                        <div className="flex-1 flex flex-col items-center justify-center text-white/20 gap-4 p-8">
                           <FileText className="w-16 h-16 opacity-10" />
-                          <p className="text-xs font-black uppercase tracking-[0.2em]">Select a document to view or redact</p>
+                          <p className="text-xs font-black uppercase tracking-[0.2em] text-center">Select a document to open it</p>
+                          <p className="text-[10px] font-mono text-white/20 text-center max-w-xs leading-relaxed">
+                            Click any file on the left to view its contents, run AI PII scanning, apply redactions, and set a public filing link.
+                          </p>
                         </div>
                       )}
                     </div>
