@@ -2,11 +2,15 @@
  * LBKH R2 Storage Service
  * All file operations are proxied through the Cloudflare Worker (lbkh-r2-proxy).
  * No R2 credentials are ever exposed to the browser.
+ *
+ * Files are stored under two path prefixes within the bucket:
+ *   sources/    — Company's own internal & public project documentation
+ *   benchmarks/ — Oppositional / comparison project documentation
  */
 
 const WORKER_URL = import.meta.env.VITE_R2_WORKER_URL as string;
 const UPLOAD_SECRET = import.meta.env.VITE_R2_UPLOAD_SECRET as string;
-const BUCKET = import.meta.env.VITE_R2_BUCKET as string; // 'liaison' or 'krambu'
+const BUCKET = import.meta.env.VITE_R2_BUCKET as string;
 
 function authHeaders(extra: Record<string, string> = {}): HeadersInit {
   return {
@@ -22,14 +26,16 @@ export interface R2Document {
   size: number;
   lastModified: string;
   type: string;
+  folder: 'sources' | 'benchmarks';
 }
 
 /**
- * Upload a file to R2 via the Worker proxy
+ * Upload a file to R2 under a specific folder prefix (sources/ or benchmarks/)
  */
-export async function uploadDocument(file: File): Promise<string> {
+export async function uploadDocument(file: File, folder: 'sources' | 'benchmarks' = 'sources'): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('folder', folder);
 
   const response = await fetch(`${WORKER_URL}/upload`, {
     method: 'POST',
@@ -47,10 +53,10 @@ export async function uploadDocument(file: File): Promise<string> {
 }
 
 /**
- * List all documents in the R2 bucket via the Worker proxy
+ * List all documents in a specific folder (sources/ or benchmarks/) via the Worker proxy
  */
-export async function listDocuments(): Promise<R2Document[]> {
-  const response = await fetch(`${WORKER_URL}/list`, {
+export async function listDocuments(folder: 'sources' | 'benchmarks' = 'sources'): Promise<R2Document[]> {
+  const response = await fetch(`${WORKER_URL}/list?prefix=${folder}/`, {
     method: 'GET',
     headers: authHeaders(),
   });
@@ -60,7 +66,7 @@ export async function listDocuments(): Promise<R2Document[]> {
   }
 
   const data = await response.json();
-  return data.files as R2Document[];
+  return (data.files as R2Document[]).map((f) => ({ ...f, folder }));
 }
 
 /**

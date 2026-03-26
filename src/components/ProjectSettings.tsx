@@ -40,65 +40,92 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   const navigate = useNavigate();
   const location = useLocation();
   
+  // --- Source Material (company's own internal/public project docs) ---
   const [sources, setSources] = useState<SourceFile[]>([]);
-  const [r2Loading, setR2Loading] = useState(false);
-  const [r2Error, setR2Error] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sourcesLoading, setSourcesLoading] = useState(false);
+  const [sourcesError, setSourcesError] = useState<string | null>(null);
+  const sourceFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load documents from R2 on mount
+  // --- Benchmark Sources (oppositional/comparison project docs) ---
+  const [benchmarkFiles, setBenchmarkFiles] = useState<SourceFile[]>([]);
+  const [benchmarksLoading, setBenchmarksLoading] = useState(false);
+  const [benchmarksError, setBenchmarksError] = useState<string | null>(null);
+  const benchmarkFileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedBenchmarkFile, setSelectedBenchmarkFile] = useState<SourceFile | null>(null);
+
+  const mapDocs = (docs: import('../services/r2Service').R2Document[]): SourceFile[] =>
+    docs.map((d) => ({
+      id: d.key,
+      name: d.name,
+      type: d.type,
+      size: d.size > 0 ? `${(d.size / 1024).toFixed(1)} KB` : '—',
+      status: 'ready' as const,
+      content: '',
+    }));
+
+  // Load both folders from R2 on mount
   useEffect(() => {
-    setR2Loading(true);
-    listDocuments()
-      .then((docs) => {
-        setSources(docs.map((d) => ({
-          id: d.key,
-          name: d.name,
-          type: d.type,
-          size: d.size > 0 ? `${(d.size / 1024).toFixed(1)} KB` : '—',
-          status: 'ready' as const,
-          content: '',
-        })));
-        setR2Error(null);
-      })
-      .catch((err) => setR2Error(err.message))
-      .finally(() => setR2Loading(false));
+    setSourcesLoading(true);
+    listDocuments('sources')
+      .then((docs) => { setSources(mapDocs(docs)); setSourcesError(null); })
+      .catch((err) => setSourcesError(err.message))
+      .finally(() => setSourcesLoading(false));
+
+    setBenchmarksLoading(true);
+    listDocuments('benchmarks')
+      .then((docs) => { setBenchmarkFiles(mapDocs(docs)); setBenchmarksError(null); })
+      .catch((err) => setBenchmarksError(err.message))
+      .finally(() => setBenchmarksLoading(false));
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSourceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    setR2Loading(true);
+    setSourcesLoading(true);
     try {
-      for (const file of files) {
-        await uploadDocument(file);
-      }
-      // Refresh list
-      const docs = await listDocuments();
-      setSources(docs.map((d) => ({
-        id: d.key,
-        name: d.name,
-        type: d.type,
-        size: d.size > 0 ? `${(d.size / 1024).toFixed(1)} KB` : '—',
-        status: 'ready' as const,
-        content: '',
-      })));
-      setR2Error(null);
+      for (const file of files) await uploadDocument(file, 'sources');
+      const docs = await listDocuments('sources');
+      setSources(mapDocs(docs));
+      setSourcesError(null);
     } catch (err: any) {
-      setR2Error(err.message);
+      setSourcesError(err.message);
     } finally {
-      setR2Loading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setSourcesLoading(false);
+      if (sourceFileInputRef.current) sourceFileInputRef.current.value = '';
     }
   };
 
-  const handleDeleteFile = async (key: string) => {
+  const handleBenchmarkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setBenchmarksLoading(true);
+    try {
+      for (const file of files) await uploadDocument(file, 'benchmarks');
+      const docs = await listDocuments('benchmarks');
+      setBenchmarkFiles(mapDocs(docs));
+      setBenchmarksError(null);
+    } catch (err: any) {
+      setBenchmarksError(err.message);
+    } finally {
+      setBenchmarksLoading(false);
+      if (benchmarkFileInputRef.current) benchmarkFileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteSourceFile = async (key: string) => {
     try {
       await deleteDocument(key);
       setSources((prev) => prev.filter((s) => s.id !== key));
       if (selectedFile?.id === key) setSelectedFile(null);
-    } catch (err: any) {
-      setR2Error(err.message);
-    }
+    } catch (err: any) { setSourcesError(err.message); }
+  };
+
+  const handleDeleteBenchmarkFile = async (key: string) => {
+    try {
+      await deleteDocument(key);
+      setBenchmarkFiles((prev) => prev.filter((s) => s.id !== key));
+      if (selectedBenchmarkFile?.id === key) setSelectedBenchmarkFile(null);
+    } catch (err: any) { setBenchmarksError(err.message); }
   };
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -107,25 +134,22 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   const handleResetDemo = async () => {
     setResetting(true);
     try {
-      // Delete all files from R2
-      for (const file of sources) {
-        await deleteDocument(file.id);
-      }
+      for (const file of sources) await deleteDocument(file.id);
+      for (const file of benchmarkFiles) await deleteDocument(file.id);
       setSources([]);
+      setBenchmarkFiles([]);
       setSelectedFile(null);
+      setSelectedBenchmarkFile(null);
       setIsLive(false);
       setShowResetConfirm(false);
     } catch (err: any) {
-      setR2Error(err.message);
+      setSourcesError(err.message);
     } finally {
       setResetting(false);
     }
   };
 
-  const [benchmarks, setBenchmarks] = useState<{ id: string; metric: string; target: string; current: string }[]>([
-    { id: '1', metric: 'Benchmark Metric 1', target: 'Target', current: 'Current' },
-    { id: '2', metric: 'Benchmark Metric 2', target: 'Target', current: 'Current' }
-  ]);
+  // (legacy benchmarks table removed — replaced by R2-backed benchmark file silo)
 
   const [visuals, setVisuals] = useState<{ id: string; name: string; type: 'logo' | 'chart' | 'render' }[]>([
     { id: '1', name: 'Project_Logo.svg', type: 'logo' },
@@ -138,6 +162,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   };
 
   const filteredSources = sources.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredBenchmarkFiles = benchmarkFiles.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleRedact = (fileId: string, wordIndex: number) => {
     if (!redactionMode) return;
@@ -343,7 +368,13 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Source Data Silo</h2>
-                      <p className="text-sm text-white/40 mt-1 uppercase tracking-widest">Grounding Repository & Redaction Suite</p>
+                      <p className="text-sm text-white/40 mt-1 uppercase tracking-widest">Internal & Public Project Documentation</p>
+                      <div className="mt-3 p-3 bg-teal-500/5 border border-teal-500/20 rounded-xl max-w-2xl">
+                        <p className="text-[11px] text-teal-300/80 leading-relaxed">
+                          <span className="font-black uppercase tracking-widest text-teal-400">Purpose: </span>
+                          Upload your company’s own internal and public documentation about this project — environmental reports, engineering specs, permits, FAQs, community letters, and any material that accurately represents your project. This is the AI’s primary knowledge base for answering questions and generating visuals. Documents can only be redacted — redaction is permanent and cannot be reversed.
+                        </p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="relative">
@@ -356,25 +387,18 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                           className="bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-2 text-xs text-white focus:outline-none focus:border-teal-400 w-64"
                         />
                       </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept=".pdf,.doc,.docx,.txt,.md"
-                        className="hidden"
-                        onChange={handleFileUpload}
-                      />
+                      <input ref={sourceFileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.txt,.md" className="hidden" onChange={handleSourceUpload} />
                       <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={r2Loading}
+                        onClick={() => sourceFileInputRef.current?.click()}
+                        disabled={sourcesLoading}
                         className="flex items-center gap-2 bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
                       >
                         <Upload className="w-4 h-4" />
-                        {r2Loading ? 'Uploading...' : 'Upload Files'}
+                        {sourcesLoading ? 'Uploading...' : 'Upload Source Docs'}
                       </button>
                       <button
                         onClick={() => setShowResetConfirm(true)}
-                        disabled={r2Loading || resetting}
+                        disabled={sourcesLoading || resetting}
                         className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
                         title="Wipe all documents and reset to Coming Soon"
                       >
@@ -390,19 +414,19 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                       <div className="p-4 border-b border-white/10 bg-white/5">
                         <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Repository Files ({filteredSources.length})</p>
                       </div>
-                      {r2Error && (
+                      {sourcesError && (
                         <div className="p-3 bg-red-500/10 border-b border-red-500/20 text-[10px] font-mono text-red-400 uppercase tracking-widest">
-                          ⚠ {r2Error}
+                          ⚠ {sourcesError}
                         </div>
                       )}
-                      {r2Loading && sources.length === 0 && (
+                      {sourcesLoading && sources.length === 0 && (
                         <div className="p-6 text-center text-white/30 text-[10px] font-mono uppercase tracking-widest">
                           Loading from R2...
                         </div>
                       )}
-                      {!r2Loading && sources.length === 0 && !r2Error && (
+                      {!sourcesLoading && sources.length === 0 && !sourcesError && (
                         <div className="p-6 text-center text-white/20 text-[10px] font-mono uppercase tracking-widest">
-                          No documents yet — upload files to get started
+                          No source documents yet — upload your project files
                         </div>
                       )}
                       <div className="divide-y divide-white/5">
@@ -421,7 +445,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                             </div>
                             {file.status === 'redacted' && <Lock className="w-3 h-3 text-red-400" />}
                             <button
-                              onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }}
+                              onClick={(e) => { e.stopPropagation(); handleDeleteSourceFile(file.id); }}
                               className="p-1 text-white/20 hover:text-red-400 transition-colors"
                               title="Delete file"
                             >
@@ -508,62 +532,116 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
               )}
 
               {activeTab === 'benchmarks' && (
-                <div className="space-y-8">
-                  <div>
-                    <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Benchmark Data Silo</h2>
-                    <p className="text-sm text-white/40 mt-1 uppercase tracking-widest">Performance Metrics & Target Tracking</p>
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-8">
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Benchmark Source Silo</h2>
+                      <p className="text-sm text-white/40 mt-1 uppercase tracking-widest">Oppositional & Comparative Project Documentation</p>
+                      <div className="mt-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl max-w-3xl">
+                        <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                          <span className="font-black uppercase tracking-widest text-amber-400">Purpose: </span>
+                          Upload documentation from other projects that your community may already have negative experience with — failed developments, environmental violations, broken promises, or poor community engagement. The AI uses these as contrast material: when Benchmark Mode is active, it compares your project’s source data directly against these cases to highlight what makes your project different and better. Together, both data sets power real-time Q&amp;A and visual generation.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                        <input
+                          type="text"
+                          placeholder="Search benchmarks..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-2 text-xs text-white focus:outline-none focus:border-amber-400 w-56"
+                        />
+                      </div>
+                      <input ref={benchmarkFileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.txt,.md" className="hidden" onChange={handleBenchmarkUpload} />
+                      <button
+                        onClick={() => benchmarkFileInputRef.current?.click()}
+                        disabled={benchmarksLoading}
+                        className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-300 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {benchmarksLoading ? 'Uploading...' : 'Upload Benchmark Docs'}
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-4">
-                      <div className="data-card p-0 border-white/10 overflow-hidden">
-                        <table className="w-full text-left">
-                          <thead>
-                            <tr className="bg-white/5 border-b border-white/10">
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-white/40">Metric Name</th>
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-white/40">Target Value</th>
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-white/40">Current Status</th>
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-white/40">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-white/5">
-                            {benchmarks.map((b) => (
-                              <tr key={b.id} className="hover:bg-white/5 transition-colors">
-                                <td className="p-4">
-                                  <input type="text" value={b.metric} className="bg-transparent text-sm font-bold text-white focus:outline-none" />
-                                </td>
-                                <td className="p-4">
-                                  <input type="text" value={b.target} className="bg-transparent text-sm font-mono text-cyan-400 focus:outline-none" />
-                                </td>
-                                <td className="p-4">
-                                  <span className="text-xs font-mono text-white/60">{b.current}</span>
-                                </td>
-                                <td className="p-4">
-                                  <button className="text-white/20 hover:text-red-400 transition-colors">
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        <button className="w-full p-4 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest text-white/30 flex items-center justify-center gap-2 transition-all">
-                          <Plus className="w-4 h-4" />
-                          Add New Benchmark
-                        </button>
+                  {/* Two-column layout: file list + viewer */}
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-8" style={{ height: 'calc(100vh - 320px)' }}>
+                    {/* File List */}
+                    <div className="xl:col-span-1 data-card overflow-y-auto border-amber-500/20 p-0">
+                      <div className="p-4 border-b border-amber-500/20 bg-amber-500/5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-400/70">Comparison Files ({filteredBenchmarkFiles.length})</p>
+                      </div>
+                      {benchmarksError && (
+                        <div className="p-3 bg-red-500/10 border-b border-red-500/20 text-[10px] font-mono text-red-400 uppercase tracking-widest">
+                          ⚠ {benchmarksError}
+                        </div>
+                      )}
+                      {benchmarksLoading && benchmarkFiles.length === 0 && (
+                        <div className="p-6 text-center text-white/30 text-[10px] font-mono uppercase tracking-widest">Loading from R2...</div>
+                      )}
+                      {!benchmarksLoading && benchmarkFiles.length === 0 && !benchmarksError && (
+                        <div className="p-6 text-center text-white/20 text-[10px] font-mono uppercase tracking-widest leading-relaxed">
+                          No benchmark documents yet — upload comparison project files to enable contrast analysis
+                        </div>
+                      )}
+                      <div className="divide-y divide-white/5">
+                        {filteredBenchmarkFiles.map((file) => (
+                          <button
+                            key={file.id}
+                            onClick={() => setSelectedBenchmarkFile(file)}
+                            className={`w-full p-4 flex items-center gap-4 hover:bg-white/5 transition-all text-left ${
+                              selectedBenchmarkFile?.id === file.id ? 'bg-amber-500/10 border-l-4 border-amber-400' : ''
+                            }`}
+                          >
+                            <div className="p-2 rounded-lg bg-amber-500/10">
+                              <FileText className="w-5 h-5 text-amber-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-white truncate">{file.name}</p>
+                              <p className="text-[10px] font-mono text-white/30 uppercase">{file.type} • {file.size}</p>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteBenchmarkFile(file.id); }}
+                              className="p-1 text-white/20 hover:text-red-400 transition-colors"
+                              title="Delete benchmark file"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </button>
+                        ))}
                       </div>
                     </div>
 
-                    <div className="space-y-6">
-                      <div className="data-card p-6 border-cyan-500/20 bg-cyan-500/5">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-cyan-400 mb-4">Benchmark Testing</h3>
-                        <p className="text-[11px] text-white/60 leading-relaxed mb-6">
-                          Simulate project performance against these benchmarks to generate predictive reports.
-                        </p>
-                        <button className="w-full py-3 bg-cyan-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest glow-cyan hover:bg-cyan-500 transition-all">
-                          Run Simulation
-                        </button>
-                      </div>
+                    {/* Viewer / Info Panel */}
+                    <div className="xl:col-span-2 data-card border-amber-500/20 flex flex-col p-0 overflow-hidden">
+                      {selectedBenchmarkFile ? (
+                        <>
+                          <div className="p-4 border-b border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
+                            <FileText className="w-4 h-4 text-amber-400" />
+                            <span className="text-xs font-bold text-white uppercase tracking-widest">{selectedBenchmarkFile.name}</span>
+                            <span className="ml-auto text-[9px] font-mono text-amber-400/60 uppercase tracking-widest">Benchmark / Comparison</span>
+                          </div>
+                          <div className="flex-1 flex flex-col items-center justify-center text-white/20 gap-4 p-8">
+                            <BarChart3 className="w-16 h-16 opacity-10" />
+                            <p className="text-xs font-black uppercase tracking-[0.2em] text-center">{selectedBenchmarkFile.name}</p>
+                            <p className="text-[10px] font-mono text-white/30 text-center max-w-sm leading-relaxed">
+                              This document is indexed as comparison material. When Benchmark Mode is active in the Chat Liaison, the AI will reference it to contrast against your source documents.
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-white/20 gap-4 p-8">
+                          <BarChart3 className="w-16 h-16 opacity-10" />
+                          <p className="text-xs font-black uppercase tracking-[0.2em] text-center">Select a benchmark document to preview</p>
+                          <p className="text-[10px] font-mono text-white/30 text-center max-w-sm leading-relaxed">
+                            Benchmark documents are used by the AI to compare and contrast against your source material during live Q&amp;A and visual generation.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
