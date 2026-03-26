@@ -93,8 +93,8 @@ export function TourOverlay() {
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-4 pb-2">
             <div className="flex items-center gap-2">
-              <Map className="w-4 h-4 text-purple-400" />
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-purple-400">
+              <Map className="w-4 h-4 text-teal-300" />
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-teal-300">
                 Guided Tour — Step {currentStepIndex + 1} of {TOUR_STEPS.length}
               </span>
             </div>
@@ -110,7 +110,7 @@ export function TourOverlay() {
           <div className="px-5 pb-3">
             <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
               <motion.div
-                className="h-full bg-purple-500 rounded-full"
+                className="h-full bg-teal-400 rounded-full"
                 animate={{ width: `${((currentStepIndex + 1) / TOUR_STEPS.length) * 100}%` }}
                 transition={{ duration: 0.3 }}
               />

@@ -137,14 +137,14 @@ export function LiveEvent({ branding }: LiveEventProps) {
   return (
     <div className="flex flex-col h-screen krambu-bg wireframe-grid overflow-hidden">
       {/* Header */}
-      <header className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-purple-500/30 flex justify-between items-center shadow-2xl relative z-20">
+      <header className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-teal-400/30 flex justify-between items-center shadow-2xl relative z-20">
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2 group">
             {branding.logo ? (
               <img src={branding.logo} alt="Logo" className="w-8 h-8 object-contain" />
             ) : (
               <div 
-                className="w-8 h-8 rounded-sm flex items-center justify-center transform rotate-45 glow-purple group-hover:scale-110 transition-transform"
+                className="w-8 h-8 rounded-sm flex items-center justify-center transform rotate-45 glow-cyan group-hover:scale-110 transition-transform"
                 style={{ background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})` }}
               >
                 <Shield className="w-5 h-5 text-white transform -rotate-45" />
@@ -282,7 +282,7 @@ export function LiveEvent({ branding }: LiveEventProps) {
                     <span className="text-[9px] font-mono text-white/30">{q.phone}</span>
                     <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
                       q.status === 'answered' ? 'bg-emerald-500/20 text-emerald-400' :
-                      q.status === 'processing' ? 'bg-purple-500/20 text-purple-400 animate-pulse' :
+                      q.status === 'processing' ? 'bg-teal-400/20 text-teal-300 animate-pulse' :
                       'bg-white/10 text-white/40'
                     }`}>
                       {q.status}

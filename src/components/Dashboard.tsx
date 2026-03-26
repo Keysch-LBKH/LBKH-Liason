@@ -149,7 +149,7 @@ export function Dashboard({ branding }: DashboardProps) {
     }
 
     return (
-      <div className="mt-6 p-6 bg-white/5 border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-xl">
+      <div className="mt-6 p-6 bg-white/5 border border-teal-400/30 rounded-xl shadow-2xl backdrop-blur-xl">
         <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-cyan-400 mb-4 flex items-center gap-3">
           <Mail className="w-4 h-4" />
           Submit Technical Inquiry
@@ -163,7 +163,7 @@ export function Dashboard({ branding }: DashboardProps) {
             <label className="flex items-center gap-3 cursor-pointer group">
               <div className={cn(
                 "w-5 h-5 border-2 rounded flex items-center justify-center transition-all",
-                isAnonymous ? "bg-purple-600 border-purple-500" : "border-white/20 group-hover:border-purple-500"
+                isAnonymous ? "bg-teal-500 border-teal-400" : "border-white/20 group-hover:border-teal-400"
               )}>
                 {isAnonymous && <CheckCircle2 className="w-3 h-3 text-white" />}
               </div>
@@ -188,7 +188,7 @@ export function Dashboard({ branding }: DashboardProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="mickey@lbkhsolutions.com"
-                  className="w-full pl-12 pr-4 py-3 text-sm bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-purple-500 text-white placeholder:text-white/20"
+                  className="w-full pl-12 pr-4 py-3 text-sm bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-teal-400 text-white placeholder:text-white/20"
                 />
               </div>
             </div>
@@ -201,7 +201,7 @@ export function Dashboard({ branding }: DashboardProps) {
             </div>
             <button 
               type="submit"
-              className="bg-purple-600 text-white px-6 py-3 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-purple-500 transition-all rounded-lg glow-purple"
+              className="bg-teal-500 text-white px-6 py-3 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-teal-400 transition-all rounded-lg glow-cyan"
             >
               Log Inquiry
             </button>
@@ -214,14 +214,14 @@ export function Dashboard({ branding }: DashboardProps) {
   return (
     <div className="flex flex-col h-screen krambu-bg wireframe-grid">
       {/* Header */}
-      <header data-tour-id="tour-header" className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-purple-500/30 flex justify-between items-center shadow-2xl relative z-10">
+      <header data-tour-id="tour-header" className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-teal-400/30 flex justify-between items-center shadow-2xl relative z-10">
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2 group">
             {branding.logo ? (
               <img src={branding.logo} alt="Logo" className="w-8 h-8 object-contain" />
             ) : (
               <div 
-                className="w-8 h-8 rounded-sm flex items-center justify-center transform rotate-45 glow-purple group-hover:scale-110 transition-transform"
+                className="w-8 h-8 rounded-sm flex items-center justify-center transform rotate-45 glow-cyan group-hover:scale-110 transition-transform"
                 style={{ background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})` }}
               >
                 <Shield className="w-5 h-5 text-white transform -rotate-45" />

@@ -11,8 +11,8 @@ export default function App() {
   const [isLive, setIsLive] = useState(false);
   const [branding, setBranding] = useState({
     logo: '/lbkh-logo.png', // Default LBKH logo — replace via Brand Identity in Settings
-    primaryColor: '#a855f7', // Default primary color — configurable in Settings
-    secondaryColor: '#06b6d4', // Default secondary color — configurable in Settings
+    primaryColor: '#40E0D0', // LBKH teal — configurable in Settings
+    secondaryColor: '#00B5A8', // LBKH teal dark — configurable in Settings
     companyName: 'YOUR COMPANY'
   });
 

@@ -7,10 +7,10 @@
 }
 
 :root {
-  --krambu-black: #050505;
-  --krambu-purple: #9333EA;
-  --krambu-cyan: #06B6D4;
-  --krambu-dark-purple: #1E1B4B;
+  --lbkh-black: #050505;
+  --lbkh-teal: #40E0D0;
+  --lbkh-teal-dark: #00B5A8;
+  --lbkh-dark-bg: #071A19;
 }
 
 @layer base {
@@ -19,8 +19,9 @@
   }
 }
 
+/* Main background — deep teal-dark instead of purple-dark */
 .krambu-bg {
-  background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #050505 100%);
+  background: radial-gradient(circle at 50% 50%, #071a19 0%, #050505 100%);
   position: relative;
   overflow: hidden;
 }
@@ -37,37 +38,42 @@
   pointer-events: none;
 }
 
+/* Grid lines in LBKH teal */
 .wireframe-grid {
   background-image: 
-    linear-gradient(to right, rgba(147, 51, 234, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(147, 51, 234, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(64, 224, 208, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(64, 224, 208, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
+/* Card borders in LBKH teal */
 .data-card {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  border: 1px solid rgba(64, 224, 208, 0.2);
   border-radius: 4px;
 }
 
+/* Glow effects */
 .glow-purple {
-  box-shadow: 0 0 15px rgba(147, 51, 234, 0.3);
+  box-shadow: 0 0 15px rgba(64, 224, 208, 0.3);
 }
 
 .glow-cyan {
-  box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 15px rgba(64, 224, 208, 0.4);
 }
 
 .glow-red {
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
 }
 
+/* Citation text in LBKH teal */
 .citation {
-  @apply text-[10px] font-mono uppercase tracking-wider text-[#A855F7] mt-1;
+  @apply text-[10px] font-mono uppercase tracking-wider mt-1;
+  color: #40E0D0;
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling in LBKH teal */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -77,12 +83,12 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(147, 51, 234, 0.2);
+  background: rgba(64, 224, 208, 0.2);
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(147, 51, 234, 0.4);
+  background: rgba(64, 224, 208, 0.4);
 }
 
 ::-webkit-scrollbar {
@@ -94,10 +100,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(147, 51, 234, 0.3);
+  background: rgba(64, 224, 208, 0.3);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(147, 51, 234, 0.5);
+  background: rgba(64, 224, 208, 0.5);
 }

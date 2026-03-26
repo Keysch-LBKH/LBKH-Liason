@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Upload, Link as LinkIcon, FileText, BarChart3, Palette, Globe, Eye, EyeOff, Save, Plus, Trash2, CheckCircle2, Search, Scissors, FlaskConical, ChevronRight, X, Lock, Unlock, Download, Radio, Layout, Zap, MessageCircle, ChevronDown, Palette as PaletteIcon, RotateCcw } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Footer } from './Footer';
+import { uploadDocument, listDocuments, deleteDocument, R2Document } from '../services/r2Service';
 
 interface Branding {
   logo: string;
@@ -39,10 +40,66 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   const navigate = useNavigate();
   const location = useLocation();
   
-  const [sources, setSources] = useState<SourceFile[]>([
-    { id: '1', name: 'Sample_Document_1.pdf', type: 'PDF', size: '—', status: 'ready', content: 'Upload your project documents here. Use the redaction tool to remove sensitive information before going live.' },
-    { id: '2', name: 'Sample_Document_2.docx', type: 'DOCX', size: '—', status: 'ready', content: 'Add additional source documents to expand the AI knowledge base for this project.' }
-  ]);
+  const [sources, setSources] = useState<SourceFile[]>([]);
+  const [r2Loading, setR2Loading] = useState(false);
+  const [r2Error, setR2Error] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load documents from R2 on mount
+  useEffect(() => {
+    setR2Loading(true);
+    listDocuments()
+      .then((docs) => {
+        setSources(docs.map((d) => ({
+          id: d.key,
+          name: d.name,
+          type: d.type,
+          size: d.size > 0 ? `${(d.size / 1024).toFixed(1)} KB` : '—',
+          status: 'ready' as const,
+          content: '',
+        })));
+        setR2Error(null);
+      })
+      .catch((err) => setR2Error(err.message))
+      .finally(() => setR2Loading(false));
+  }, []);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setR2Loading(true);
+    try {
+      for (const file of files) {
+        await uploadDocument(file);
+      }
+      // Refresh list
+      const docs = await listDocuments();
+      setSources(docs.map((d) => ({
+        id: d.key,
+        name: d.name,
+        type: d.type,
+        size: d.size > 0 ? `${(d.size / 1024).toFixed(1)} KB` : '—',
+        status: 'ready' as const,
+        content: '',
+      })));
+      setR2Error(null);
+    } catch (err: any) {
+      setR2Error(err.message);
+    } finally {
+      setR2Loading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteFile = async (key: string) => {
+    try {
+      await deleteDocument(key);
+      setSources((prev) => prev.filter((s) => s.id !== key));
+      if (selectedFile?.id === key) setSelectedFile(null);
+    } catch (err: any) {
+      setR2Error(err.message);
+    }
+  };
 
   const [benchmarks, setBenchmarks] = useState<{ id: string; metric: string; target: string; current: string }[]>([
     { id: '1', metric: 'Benchmark Metric 1', target: 'Target', current: 'Current' },
@@ -93,7 +150,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   return (
     <div className="flex flex-col h-screen krambu-bg wireframe-grid overflow-hidden">
       {/* Header */}
-      <header className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-purple-500/30 flex justify-between items-center shadow-2xl relative z-20">
+      <header className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-teal-400/30 flex justify-between items-center shadow-2xl relative z-20">
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2 group">
             <div 
@@ -275,12 +332,24 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                           placeholder="Search documents..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-2 text-xs text-white focus:outline-none focus:border-purple-500 w-64"
+                          className="bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-2 text-xs text-white focus:outline-none focus:border-teal-400 w-64"
                         />
                       </div>
-                      <button className="flex items-center gap-2 bg-white/5 border border-white/10 hover:border-purple-500/50 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.txt,.md"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={r2Loading}
+                        className="flex items-center gap-2 bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                      >
                         <Upload className="w-4 h-4" />
-                        Upload Files
+                        {r2Loading ? 'Uploading...' : 'Upload Files'}
                       </button>
                     </div>
                   </div>
@@ -291,12 +360,27 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                       <div className="p-4 border-b border-white/10 bg-white/5">
                         <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Repository Files ({filteredSources.length})</p>
                       </div>
+                      {r2Error && (
+                        <div className="p-3 bg-red-500/10 border-b border-red-500/20 text-[10px] font-mono text-red-400 uppercase tracking-widest">
+                          ⚠ {r2Error}
+                        </div>
+                      )}
+                      {r2Loading && sources.length === 0 && (
+                        <div className="p-6 text-center text-white/30 text-[10px] font-mono uppercase tracking-widest">
+                          Loading from R2...
+                        </div>
+                      )}
+                      {!r2Loading && sources.length === 0 && !r2Error && (
+                        <div className="p-6 text-center text-white/20 text-[10px] font-mono uppercase tracking-widest">
+                          No documents yet — upload files to get started
+                        </div>
+                      )}
                       <div className="divide-y divide-white/5">
                         {filteredSources.map((file) => (
                           <button
                             key={file.id}
                             onClick={() => setSelectedFile(file)}
-                            className={`w-full p-4 flex items-center gap-4 hover:bg-white/5 transition-all text-left ${selectedFile?.id === file.id ? 'bg-purple-600/10 border-l-4 border-purple-500' : ''}`}
+                            className={`w-full p-4 flex items-center gap-4 hover:bg-white/5 transition-all text-left ${selectedFile?.id === file.id ? 'bg-teal-500/10 border-l-4 border-teal-400' : ''}`}
                           >
                             <div className={`p-2 rounded-lg ${file.status === 'redacted' ? 'bg-red-500/10' : 'bg-cyan-500/10'}`}>
                               <FileText className={`w-5 h-5 ${file.status === 'redacted' ? 'text-red-400' : 'text-cyan-400'}`} />
@@ -306,6 +390,13 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                               <p className="text-[10px] font-mono text-white/30 uppercase">{file.type} • {file.size}</p>
                             </div>
                             {file.status === 'redacted' && <Lock className="w-3 h-3 text-red-400" />}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }}
+                              className="p-1 text-white/20 hover:text-red-400 transition-colors"
+                              title="Delete file"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           </button>
                         ))}
                       </div>
@@ -453,7 +544,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                       <div key={v.id} className="data-card p-0 border-white/10 group overflow-hidden aspect-square flex flex-col">
                         <div className="flex-1 bg-white/5 flex items-center justify-center relative">
                           {v.type === 'logo' ? (
-                            <Shield className="w-16 h-16 text-purple-500/40" />
+                            <Shield className="w-16 h-16 text-teal-400/40" />
                           ) : (
                             <Globe className="w-16 h-16 text-cyan-500/40" />
                           )}
@@ -472,8 +563,8 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                         </div>
                       </div>
                     ))}
-                    <button className="data-card border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-purple-500/50 hover:bg-white/5 transition-all group aspect-square">
-                      <Upload className="w-8 h-8 text-white/10 group-hover:text-purple-500" />
+                    <button className="data-card border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-teal-400/50 hover:bg-white/5 transition-all group aspect-square">
+                      <Upload className="w-8 h-8 text-white/10 group-hover:text-teal-400" />
                       <span className="text-[10px] font-black uppercase tracking-widest text-white/20 group-hover:text-white">Upload Asset</span>
                     </button>
                   </div>
@@ -491,7 +582,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                   {/* Logo Upload */}
                   <div className="space-y-4">
                     <label className="text-[10px] font-black uppercase tracking-widest text-white/60">Project Logo</label>
-                    <div className="aspect-square bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center p-8 text-center group hover:border-purple-500/50 transition-colors cursor-pointer relative overflow-hidden">
+                    <div className="aspect-square bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center p-8 text-center group hover:border-teal-400/50 transition-colors cursor-pointer relative overflow-hidden">
                       {branding.logo ? (
                         <img src={branding.logo} alt="Project Logo" className="max-h-full object-contain" />
                       ) : (
@@ -513,7 +604,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                         type="text" 
                         value={branding.companyName}
                         onChange={(e) => setBranding({ ...branding, companyName: e.target.value })}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-400/50 transition-colors"
                         placeholder="e.g. YOUR COMPANY"
                       />
                     </div>
@@ -556,8 +647,8 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                   </div>
                 </div>
 
-                <div className="p-6 bg-purple-600/10 border border-purple-500/30 rounded-2xl space-y-4">
-                  <div className="flex items-center gap-3 text-purple-400">
+                <div className="p-6 bg-teal-500/10 border border-teal-400/30 rounded-2xl space-y-4">
+                  <div className="flex items-center gap-3 text-teal-300">
                     <PaletteIcon className="w-5 h-5" />
                     <h3 className="text-xs font-black uppercase tracking-widest">Branding Preview</h3>
                   </div>
@@ -584,22 +675,22 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                     <p className="text-sm text-white/40 mt-1 uppercase tracking-widest">Sandbox Environment for Liaison Verification</p>
                   </div>
 
-                  <div className="flex-1 data-card border-purple-500/20 bg-black/40 flex flex-col overflow-hidden">
+                  <div className="flex-1 data-card border-teal-400/20 bg-black/40 flex flex-col overflow-hidden">
                     <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
                       <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                        <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Isolated Sandbox Instance</span>
                       </div>
                       <button className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors">Reset Session</button>
                     </div>
                     <div className="flex-1 p-8 flex flex-col items-center justify-center text-center space-y-6">
-                      <FlaskConical className="w-16 h-16 text-purple-500/20" />
+                      <FlaskConical className="w-16 h-16 text-teal-400/20" />
                       <div className="max-w-md space-y-4">
                         <h3 className="text-lg font-black uppercase tracking-widest text-white">Ready for Testing</h3>
                         <p className="text-sm text-white/40 leading-relaxed">
                           This sandbox uses the current silo data (Source, Benchmarks, Visuals) to simulate the public Liaison experience. Test your redactions and data grounding here.
                         </p>
-                        <button className="px-8 py-3 bg-purple-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest glow-purple hover:bg-purple-500 transition-all">
+                        <button className="px-8 py-3 bg-teal-500 text-white rounded-xl text-[11px] font-black uppercase tracking-widest glow-cyan hover:bg-teal-400 transition-all">
                           Launch Sandbox Session
                         </button>
                       </div>
