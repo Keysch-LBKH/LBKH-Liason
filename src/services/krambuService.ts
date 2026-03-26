@@ -55,7 +55,7 @@ export class KrambuService {
   private ai: any;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    this.ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   }
 
   async chat(message: string, history: { role: string; parts: { text: string }[] }[], benchmarkMode: boolean = false) {
