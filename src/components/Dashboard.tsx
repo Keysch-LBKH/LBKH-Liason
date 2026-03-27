@@ -245,12 +245,6 @@ export function Dashboard({ branding }: DashboardProps) {
           </Link>
         </div>
         <nav className="hidden lg:flex items-center gap-8 text-[11px] font-bold uppercase tracking-widest text-white/70">
-          <Link to="/" className="transition-colors" style={{ color: branding.primaryColor }}>Home</Link>
-          <a href="#" className="transition-colors hover:text-white">Colocation</a>
-          <a href="#" className="transition-colors hover:text-white">AI GPU Clusters</a>
-          <a href="#" className="transition-colors hover:text-white">Services</a>
-          <a href="#" className="transition-colors hover:text-white">Shop</a>
-          <a href="#" className="transition-colors hover:text-white">Press</a>
           <Link data-tour-id="tour-settings-link" to="/settings" className="transition-colors flex items-center gap-2 hover:text-white">
             <Settings className="w-3 h-3" style={{ color: branding.primaryColor }} />
             Settings
