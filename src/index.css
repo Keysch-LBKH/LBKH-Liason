@@ -20,13 +20,13 @@
 }
 
 /* Main background — deep teal-dark instead of purple-dark */
-.krambu-bg {
+.liaison-bg {
   background: radial-gradient(circle at 50% 50%, #071a19 0%, #050505 100%);
   position: relative;
   overflow: hidden;
 }
 
-.krambu-bg::before {
+.liaison-bg::before {
   content: "";
   position: absolute;
   top: 0;

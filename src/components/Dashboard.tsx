@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { krambuService } from '../services/krambuService';
+import { liaisonService } from '../services/liaisonService';
 import ReactMarkdown from 'react-markdown';
 import { Send, Shield, Info, AlertTriangle, FileText, ChevronRight, Loader2, Mail, Clock, CheckCircle2, Podcast, Presentation, Network, ExternalLink, Settings, Radio, Zap, Layout, MessageCircle, ChevronDown } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
@@ -95,7 +95,7 @@ export function Dashboard({ branding }: DashboardProps) {
         parts: [{ text: m.text }],
       }));
 
-      const responseText = await krambuService.chat(messageText, history, benchmarkMode);
+      const responseText = await liaisonService.chat(messageText, history, benchmarkMode);
       const { cleanText, suggestions, isInternalReview } = parseResponse(responseText || "");
       
       const modelMessage: Message = {
@@ -212,7 +212,7 @@ export function Dashboard({ branding }: DashboardProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen krambu-bg wireframe-grid">
+    <div className="flex flex-col h-screen liaison-bg wireframe-grid">
       {/* Header */}
       <header data-tour-id="tour-header" className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-teal-400/30 flex justify-between items-center shadow-2xl relative z-10">
         <div className="flex items-center gap-4">

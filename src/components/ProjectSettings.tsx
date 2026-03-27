@@ -192,7 +192,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   const filteredBenchmarkFiles = benchmarkFiles.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <div className="flex flex-col h-screen krambu-bg wireframe-grid overflow-hidden">
+    <div className="flex flex-col h-screen liaison-bg wireframe-grid overflow-hidden">
       {/* Header */}
       <header className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-teal-400/30 flex justify-between items-center shadow-2xl relative z-20">
         <div className="flex items-center gap-4">

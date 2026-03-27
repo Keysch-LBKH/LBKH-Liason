@@ -16,7 +16,7 @@ interface ComingSoonProps {
 
 export function ComingSoon({ branding }: ComingSoonProps) {
   return (
-    <div className="flex flex-col h-screen krambu-bg wireframe-grid items-center justify-center p-8 text-center relative overflow-hidden">
+    <div className="flex flex-col h-screen liaison-bg wireframe-grid items-center justify-center p-8 text-center relative overflow-hidden">
       {/* Background Glows */}
       <div 
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[120px] animate-pulse"
