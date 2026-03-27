@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { liaisonService } from '../services/liaisonService';
 import ReactMarkdown from 'react-markdown';
-import { Send, Shield, Info, AlertTriangle, FileText, ChevronRight, Loader2, Mail, Clock, CheckCircle2, Podcast, Presentation, Network, ExternalLink, Settings, Radio, Zap, Layout, MessageCircle, ChevronDown } from 'lucide-react';
+import { Send, Shield, Info, AlertTriangle, FileText, ChevronRight, Loader2, Mail, Clock, CheckCircle2, ExternalLink, Settings, Radio, Layout, MessageCircle, ChevronDown } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { MindMap } from './MindMap';
+import { KnowledgeMap } from './KnowledgeMap';
+import { MediaPanel } from './MediaPanel';
 import { PitchDeck } from './PitchDeck';
 import { Footer } from './Footer';
 import { AnimatePresence, motion } from 'motion/react';
@@ -524,98 +525,24 @@ export function Dashboard({ branding }: DashboardProps) {
           </div>
         </section>
 
-        {/* Right Sidebar - Extras */}
+        {/* Right Sidebar - Knowledge Map & Media */}
         <aside className="w-full lg:w-96 flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2">
-          {/* Mind Map Section */}
-          <div 
+          {/* Knowledge Map */}
+          <div
             data-tour-id="tour-mindmap"
             className="data-card p-6 border-opacity-20"
             style={{ borderColor: branding.primaryColor }}
           >
-            <div 
-              className="flex items-center gap-3 mb-4"
-              style={{ color: branding.secondaryColor }}
-            >
-              <Network className="w-5 h-5" />
-              <h2 className="text-sm font-black uppercase tracking-widest">Knowledge Map</h2>
-            </div>
-            <div className="bg-black/40 rounded-lg border border-white/5 overflow-hidden">
-              <MindMap />
-            </div>
-            <p className="text-[10px] text-white/40 mt-3 italic leading-relaxed">
-              Hover nodes to view technical citations and relationship data.
-            </p>
+            <KnowledgeMap branding={branding} />
           </div>
 
-          {/* Podcast Section */}
-          <div 
-            data-tour-id="tour-podcast"
+          {/* Media & Assets Panel */}
+          <div
+            data-tour-id="tour-media"
             className="data-card p-6 border-opacity-20"
             style={{ borderColor: branding.primaryColor }}
           >
-            <div 
-              className="flex items-center gap-3 mb-4"
-              style={{ color: branding.primaryColor }}
-            >
-              <Podcast className="w-5 h-5" />
-              <h2 className="text-sm font-black uppercase tracking-widest">Project Podcast</h2>
-            </div>
-            <div className="space-y-3">
-              {[
-                { title: "Ep 01: Project Overview", duration: "12:45", date: "" },
-                { title: "Ep 02: Coming Soon", duration: "", date: "" },
-                { title: "Ep 03: Coming Soon", duration: "", date: "" }
-              ].map((p, idx) => (
-                <div 
-                  key={idx} 
-                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 transition-all cursor-pointer group"
-                  style={{ borderColor: branding.primaryColor + '20' }}
-                >
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-bold text-white/80 group-hover:text-white" style={{ color: branding.primaryColor }}>{p.title}</span>
-                    <span className="text-[9px] font-mono text-white/30 uppercase">{p.date} • {p.duration}</span>
-                  </div>
-                  <ExternalLink className="w-3 h-3 text-white/20 group-hover:opacity-100" style={{ color: branding.primaryColor }} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Pitch Deck Section */}
-          <div 
-            data-tour-id="tour-pitchdeck"
-            className="data-card p-6 border-opacity-20"
-            style={{ borderColor: branding.primaryColor }}
-          >
-            <div 
-              className="flex items-center gap-3 mb-4"
-              style={{ color: branding.secondaryColor }}
-            >
-              <Presentation className="w-5 h-5" />
-              <h2 className="text-sm font-black uppercase tracking-widest">Pitch Deck</h2>
-            </div>
-            <div 
-              onClick={() => setShowPitchDeck(true)}
-              className="relative aspect-video bg-white/5 rounded-lg border border-white/10 flex items-center justify-center group cursor-pointer overflow-hidden"
-              style={{ borderColor: branding.primaryColor + '40' }}
-            >
-              <img 
-                src="https://picsum.photos/seed/project-deck/400/225" 
-                alt="Pitch Deck Preview" 
-                className="w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-700"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
-                <FileText className="w-8 h-8 mb-2" style={{ color: branding.primaryColor }} />
-                <span className="text-[10px] font-black uppercase tracking-widest">View Full Deck</span>
-              </div>
-              <div 
-                className="absolute bottom-2 left-2 px-2 py-1 bg-black/80 rounded text-[8px] font-mono uppercase"
-                style={{ color: branding.secondaryColor }}
-              >
-                Phase 1: Regenerative Infrastructure
-              </div>
-            </div>
+            <MediaPanel branding={branding} />
           </div>
         </aside>
       </main>

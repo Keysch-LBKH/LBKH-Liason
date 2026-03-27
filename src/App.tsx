@@ -6,6 +6,7 @@ import { ComingSoon } from './components/ComingSoon';
 import { LiveEvent } from './components/LiveEvent';
 import { TourProvider } from './components/TourContext';
 import { TourOverlay } from './components/TourOverlay';
+import { GoogleAuthGuard } from './components/GoogleAuthGuard';
 
 const STORAGE_KEY = 'lbkh_liaison_state';
 
@@ -67,16 +68,29 @@ export default function App() {
             element={isLive ? <Dashboard branding={branding} /> : <ComingSoon branding={branding} />}
           />
 
-          {/* Settings Route (Always accessible for configuration) */}
+          {/* Settings Route — protected by Google Auth */}
           <Route
             path="/settings"
-            element={<ProjectSettings isLive={isLive} setIsLive={setIsLive} branding={branding} setBranding={setBranding} />}
+            element={
+              <GoogleAuthGuard branding={branding}>
+                <ProjectSettings
+                  isLive={isLive}
+                  setIsLive={setIsLive}
+                  branding={branding}
+                  setBranding={setBranding}
+                />
+              </GoogleAuthGuard>
+            }
           />
 
-          {/* Live Event Route */}
+          {/* Live Event Route — protected by Google Auth */}
           <Route
             path="/event"
-            element={<LiveEvent branding={branding} />}
+            element={
+              <GoogleAuthGuard branding={branding}>
+                <LiveEvent branding={branding} />
+              </GoogleAuthGuard>
+            }
           />
 
           {/* Fallback */}

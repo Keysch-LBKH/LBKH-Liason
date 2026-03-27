@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Upload, Link as LinkIcon, FileText, BarChart3, Palette, Globe, Eye, EyeOff, Save, Plus, Trash2, CheckCircle2, Search, Scissors, FlaskConical, ChevronRight, X, Lock, Unlock, Download, Radio, Layout, Zap, MessageCircle, ChevronDown, Palette as PaletteIcon, RotateCcw } from 'lucide-react';
+import { Shield, Upload, Link as LinkIcon, FileText, BarChart3, Palette, Globe, Eye, EyeOff, Save, Plus, Trash2, CheckCircle2, Search, Scissors, FlaskConical, ChevronRight, X, Lock, Unlock, Download, Radio, Layout, Zap, MessageCircle, ChevronDown, Palette as PaletteIcon, RotateCcw, Image, FileAudio, Video, Layers, Loader2 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Footer } from './Footer';
@@ -178,10 +178,80 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
     if (logoFileInputRef.current) logoFileInputRef.current.value = '';
   };
 
-  const [visuals, setVisuals] = useState<{ id: string; name: string; type: 'logo' | 'chart' | 'render' }[]>([
-    { id: '1', name: 'Project_Logo.svg', type: 'logo' },
-    { id: '2', name: 'Project_Visual.png', type: 'render' }
-  ]);
+  // Visual / Media assets — R2-backed
+  interface VisualAsset { key: string; name: string; displayName: string; assetType: 'visual' | 'audio' | 'video'; size: number; }
+  const [visualAssets, setVisualAssets] = useState<VisualAsset[]>([]);
+  const [visualUploading, setVisualUploading] = useState(false);
+  const [visualUploadError, setVisualUploadError] = useState<string | null>(null);
+  const [newAssetName, setNewAssetName] = useState('');
+  const [newAssetType, setNewAssetType] = useState<'visual' | 'audio' | 'video'>('visual');
+  const visualFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load visual assets from R2 on mount
+  useEffect(() => {
+    async function loadVisuals() {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_R2_WORKER_URL}/list?prefix=media/`, {
+          headers: { 'X-Upload-Secret': import.meta.env.VITE_R2_UPLOAD_SECRET, 'X-Bucket': import.meta.env.VITE_R2_BUCKET },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const items: VisualAsset[] = (data.objects || []).map((obj: Record<string, unknown>) => ({
+          key: obj.key as string,
+          name: obj.name as string,
+          displayName: (obj.displayName as string) || (obj.name as string),
+          assetType: (obj.assetType as 'visual' | 'audio' | 'video') || 'visual',
+          size: obj.size as number,
+        }));
+        setVisualAssets(items);
+      } catch { /* ignore */ }
+    }
+    loadVisuals();
+  }, []);
+
+  const handleVisualUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !newAssetName.trim()) return;
+    setVisualUploading(true);
+    setVisualUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'media');
+      formData.append('displayName', newAssetName.trim());
+      formData.append('assetType', newAssetType);
+      const res = await fetch(`${import.meta.env.VITE_R2_WORKER_URL}/upload`, {
+        method: 'POST',
+        headers: { 'X-Upload-Secret': import.meta.env.VITE_R2_UPLOAD_SECRET, 'X-Bucket': import.meta.env.VITE_R2_BUCKET },
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      setVisualAssets(prev => [...prev, {
+        key: data.key,
+        name: file.name,
+        displayName: newAssetName.trim(),
+        assetType: newAssetType,
+        size: file.size,
+      }]);
+      setNewAssetName('');
+    } catch (err) {
+      setVisualUploadError('Upload failed. Please try again.');
+    } finally {
+      setVisualUploading(false);
+      if (visualFileInputRef.current) visualFileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteVisual = async (key: string) => {
+    try {
+      await fetch(`${import.meta.env.VITE_R2_WORKER_URL}/delete/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+        headers: { 'X-Upload-Secret': import.meta.env.VITE_R2_UPLOAD_SECRET, 'X-Bucket': import.meta.env.VITE_R2_BUCKET },
+      });
+      setVisualAssets(prev => prev.filter(a => a.key !== key));
+    } catch { /* ignore */ }
+  };
 
   const handleSave = () => {
     setShowSaved(true);
@@ -608,38 +678,84 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
               {activeTab === 'visuals' && (
                 <div className="space-y-8">
                   <div>
-                    <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Visual Assets Silo</h2>
-                    <p className="text-sm text-white/40 mt-1 uppercase tracking-widest">Branding, Renders & Technical Diagrams</p>
+                    <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Media Assets Silo</h2>
+                    <p className="text-sm text-white/40 mt-1 uppercase tracking-widest">Visuals, Audio, Video & Presentations</p>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {visuals.map((v) => (
-                      <div key={v.id} className="data-card p-0 border-white/10 group overflow-hidden aspect-square flex flex-col">
-                        <div className="flex-1 bg-white/5 flex items-center justify-center relative">
-                          {v.type === 'logo' ? (
-                            <Shield className="w-16 h-16 text-teal-400/40" />
-                          ) : (
-                            <Globe className="w-16 h-16 text-cyan-500/40" />
-                          )}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                            <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 text-white">
-                              <Eye className="w-5 h-5" />
-                            </button>
-                            <button className="p-2 bg-white/10 rounded-lg hover:bg-red-500/40 text-white">
-                              <Trash2 className="w-5 h-5" />
-                            </button>
+                  {/* Upload form */}
+                  <div className="data-card p-6 border-white/10 space-y-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: primaryColor }}>Upload New Asset</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <input
+                        type="text"
+                        placeholder="Display name..."
+                        value={newAssetName}
+                        onChange={e => setNewAssetName(e.target.value)}
+                        className="col-span-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30"
+                      />
+                      <select
+                        value={newAssetType}
+                        onChange={e => setNewAssetType(e.target.value as 'visual' | 'audio' | 'video')}
+                        className="col-span-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-white/30"
+                      >
+                        <option value="visual">Visual (image, infographic, slide deck)</option>
+                        <option value="audio">Audio (podcast, recording)</option>
+                        <option value="video">Video</option>
+                      </select>
+                      <button
+                        onClick={() => visualFileInputRef.current?.click()}
+                        disabled={!newAssetName.trim() || visualUploading}
+                        className="col-span-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-black text-[11px] uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        style={{ backgroundColor: primaryColor + '20', color: primaryColor, border: `1px solid ${primaryColor}40` }}
+                      >
+                        {visualUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        {visualUploading ? 'Uploading...' : 'Choose File'}
+                      </button>
+                    </div>
+                    <input
+                      ref={visualFileInputRef}
+                      type="file"
+                      accept="image/*,.svg,.pdf,.ppt,.pptx,.mp3,.wav,.m4a,.mp4,.mov,.webm"
+                      className="hidden"
+                      onChange={handleVisualUpload}
+                    />
+                    {visualUploadError && <p className="text-xs text-red-400">{visualUploadError}</p>}
+                  </div>
+
+                  {/* Asset list */}
+                  {visualAssets.length === 0 && !visualUploading && (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <Layers className="w-8 h-8 text-white/10 mb-3" />
+                      <p className="text-xs text-white/30">No media assets uploaded yet. Enter a name, select a type, and choose a file above.</p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-3">
+                    {visualAssets.map(asset => {
+                      const iconMap = { visual: Image, audio: FileAudio, video: Video };
+                      const AssetIcon = iconMap[asset.assetType] || Image;
+                      return (
+                        <div
+                          key={asset.key}
+                          className="flex items-center gap-4 p-4 rounded-lg border transition-all group"
+                          style={{ borderColor: primaryColor + '30', backgroundColor: primaryColor + '08' }}
+                        >
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: primaryColor + '20' }}>
+                            <AssetIcon className="w-5 h-5" style={{ color: primaryColor }} />
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-white/80 truncate">{asset.displayName}</p>
+                            <p className="text-[9px] font-mono text-white/30 uppercase">{asset.assetType} • {(asset.size / 1024).toFixed(1)} KB</p>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteVisual(asset.key)}
+                            className="p-2 rounded-lg text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                        <div className="p-3 border-t border-white/10 bg-black/40">
-                          <p className="text-[10px] font-bold text-white truncate uppercase tracking-widest">{v.name}</p>
-                          <p className="text-[8px] font-mono text-white/30 uppercase mt-1">{v.type}</p>
-                        </div>
-                      </div>
-                    ))}
-                    <button className="data-card border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-teal-400/50 hover:bg-white/5 transition-all group aspect-square">
-                      <Upload className="w-8 h-8 text-white/10 group-hover:text-teal-400" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/20 group-hover:text-white">Upload Asset</span>
-                    </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -772,29 +888,68 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                     <p className="text-sm text-white/40 mt-1 uppercase tracking-widest">Sandbox Environment for Liaison Verification</p>
                   </div>
 
-                  <div className="flex-1 data-card border-teal-400/20 bg-black/40 flex flex-col overflow-hidden">
+                  {/* Sandbox launch */}
+                  <div className="data-card border-white/10 bg-black/40 flex flex-col overflow-hidden">
                     <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
                       <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse" />
+                        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: primaryColor }} />
                         <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Isolated Sandbox Instance</span>
                       </div>
-                      <button className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors">Reset Session</button>
                     </div>
-                    <div className="flex-1 p-8 flex flex-col items-center justify-center text-center space-y-6">
-                      <FlaskConical className="w-16 h-16 text-teal-400/20" />
+                    <div className="p-8 flex flex-col items-center justify-center text-center space-y-6">
+                      <FlaskConical className="w-12 h-12 text-white/10" />
                       <div className="max-w-md space-y-4">
                         <h3 className="text-lg font-black uppercase tracking-widest text-white">Ready for Testing</h3>
                         <p className="text-sm text-white/40 leading-relaxed">
-                          This sandbox uses the current silo data (Source, Benchmarks, Visuals) to simulate the public Liaison experience. Test your redactions and data grounding here.
+                          Opens the public Liaison interface in a new tab using your current silo data, branding, and settings.
                         </p>
                         <button
                           onClick={() => window.open('/', '_blank', 'noopener,noreferrer')}
-                          className="px-8 py-3 bg-teal-500 text-white rounded-xl text-[11px] font-black uppercase tracking-widest glow-cyan hover:bg-teal-400 transition-all"
+                          className="px-8 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all"
+                          style={{ backgroundColor: primaryColor, color: '#000' }}
                         >
                           Launch Sandbox Session
                         </button>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Widget Deploy Code */}
+                  <div className="data-card border-white/10 bg-black/40 space-y-4 p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }} />
+                      <h3 className="text-[11px] font-black uppercase tracking-widest" style={{ color: primaryColor }}>Embeddable Chat Widget</h3>
+                    </div>
+                    <p className="text-xs text-white/40 leading-relaxed">
+                      Copy this script tag and paste it into any website's HTML to embed the {branding.companyName} chat widget. The widget uses your current branding and connects to this project's knowledge base.
+                    </p>
+                    <div className="p-4 bg-black/60 border border-white/10 rounded-xl overflow-x-auto">
+                      <pre className="text-[10px] font-mono text-green-400 whitespace-pre-wrap break-all leading-relaxed">{`<script
+  src="${window.location.origin}/widget.js"
+  data-worker-url="${import.meta.env.VITE_R2_WORKER_URL || ''}"
+  data-bucket="${import.meta.env.VITE_R2_BUCKET || ''}"
+  data-secret="${import.meta.env.VITE_R2_UPLOAD_SECRET || ''}"
+  data-gemini-key="YOUR_GEMINI_API_KEY"
+  data-primary-color="${branding.primaryColor}"
+  data-secondary-color="${branding.secondaryColor}"
+  data-company-name="${branding.companyName}"
+  data-is-live="${isLive}"
+></script>`}</pre>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const code = `<script\n  src="${window.location.origin}/widget.js"\n  data-worker-url="${import.meta.env.VITE_R2_WORKER_URL || ''}"\n  data-bucket="${import.meta.env.VITE_R2_BUCKET || ''}"\n  data-secret="${import.meta.env.VITE_R2_UPLOAD_SECRET || ''}"\n  data-gemini-key="YOUR_GEMINI_API_KEY"\n  data-primary-color="${branding.primaryColor}"\n  data-secondary-color="${branding.secondaryColor}"\n  data-company-name="${branding.companyName}"\n  data-is-live="${isLive}"\n></script>`;
+                        navigator.clipboard.writeText(code).catch(() => {});
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                      style={{ backgroundColor: primaryColor + '20', color: primaryColor, border: `1px solid ${primaryColor}40` }}
+                    >
+                      <Download className="w-3 h-3" />
+                      Copy Embed Code
+                    </button>
+                    <p className="text-[9px] text-white/20 leading-relaxed">
+                      Note: Replace YOUR_GEMINI_API_KEY with your actual Gemini API key before deploying. Keep your secret key private — do not expose it in public-facing code.
+                    </p>
                   </div>
                 </div>
               )}
