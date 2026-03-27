@@ -164,6 +164,20 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
 
   // (legacy benchmarks table removed — replaced by R2-backed benchmark file silo)
 
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setBranding({ ...branding, logo: dataUrl });
+    };
+    reader.readAsDataURL(file);
+    if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+  };
+
   const [visuals, setVisuals] = useState<{ id: string; name: string; type: 'logo' | 'chart' | 'render' }[]>([
     { id: '1', name: 'Project_Logo.svg', type: 'logo' },
     { id: '2', name: 'Project_Visual.png', type: 'render' }
@@ -641,18 +655,42 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                   {/* Logo Upload */}
                   <div className="space-y-4">
                     <label className="text-[10px] font-black uppercase tracking-widest text-white/60">Project Logo</label>
-                    <div className="aspect-square bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center p-8 text-center group hover:border-teal-400/50 transition-colors cursor-pointer relative overflow-hidden">
+                    <input
+                      ref={logoFileInputRef}
+                      type="file"
+                      accept="image/*,.svg"
+                      className="hidden"
+                      onChange={handleLogoUpload}
+                    />
+                    <div
+                      onClick={() => logoFileInputRef.current?.click()}
+                      className="aspect-square bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center p-8 text-center group hover:border-teal-400/50 transition-colors cursor-pointer relative overflow-hidden"
+                    >
                       {branding.logo ? (
-                        <img src={branding.logo} alt="Project Logo" className="max-h-full object-contain" />
+                        <>
+                          <img src={branding.logo} alt="Project Logo" className="max-h-[70%] object-contain mb-4" />
+                          <span className="text-[9px] font-black uppercase tracking-widest text-teal-400/70 group-hover:text-teal-300 transition-colors">
+                            Click to replace logo
+                          </span>
+                        </>
                       ) : (
                         <>
                           <div className="p-4 bg-white/5 rounded-full mb-4 group-hover:scale-110 transition-transform">
-                            <Upload className="w-8 h-8 text-white/20" />
+                            <Upload className="w-8 h-8 text-white/20 group-hover:text-teal-400/60 transition-colors" />
                           </div>
-                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Drop logo here or click to upload</p>
+                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest group-hover:text-white/60 transition-colors">Click to upload logo</p>
+                          <p className="text-[9px] text-white/20 font-mono mt-1">PNG, JPG, SVG, WebP</p>
                         </>
                       )}
                     </div>
+                    {branding.logo && (
+                      <button
+                        onClick={() => setBranding({ ...branding, logo: '' })}
+                        className="w-full py-2 text-[9px] font-black uppercase tracking-widest text-red-400/60 hover:text-red-400 transition-colors border border-red-500/10 hover:border-red-500/30 rounded-xl"
+                      >
+                        Remove Logo
+                      </button>
+                    )}
                   </div>
 
                   {/* Color Configuration */}
@@ -749,7 +787,10 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                         <p className="text-sm text-white/40 leading-relaxed">
                           This sandbox uses the current silo data (Source, Benchmarks, Visuals) to simulate the public Liaison experience. Test your redactions and data grounding here.
                         </p>
-                        <button className="px-8 py-3 bg-teal-500 text-white rounded-xl text-[11px] font-black uppercase tracking-widest glow-cyan hover:bg-teal-400 transition-all">
+                        <button
+                          onClick={() => window.open('/', '_blank', 'noopener,noreferrer')}
+                          className="px-8 py-3 bg-teal-500 text-white rounded-xl text-[11px] font-black uppercase tracking-widest glow-cyan hover:bg-teal-400 transition-all"
+                        >
                           Launch Sandbox Session
                         </button>
                       </div>
