@@ -368,7 +368,7 @@ export function LiveEvent({ branding }: LiveEventProps) {
 
         {/* ── Left Panel: QR + Question Queue ──────────────────────────────── */}
         <aside
-          className="w-80 border-r flex flex-col overflow-hidden"
+          className="w-96 border-r flex flex-col overflow-hidden"
           style={{ backgroundColor: `${branding.primaryColor}05`, borderColor: `${branding.primaryColor}20` }}
         >
           {/* QR Code */}
@@ -379,7 +379,7 @@ export function LiveEvent({ branding }: LiveEventProps) {
             <div className="inline-block p-3 bg-white rounded-xl shadow-2xl">
               <QRCodeSVG
                 value={`${window.location.origin}/ask?event=${EVENT_ID}`}
-                size={140}
+                size={512}
                 level="H"
                 includeMargin={false}
               />
