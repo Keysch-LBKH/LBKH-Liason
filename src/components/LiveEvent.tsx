@@ -41,9 +41,16 @@ interface Topic {
   color: string;
 }
 
+interface Citation {
+  docName: string;
+  snippet: string;
+  publicUrl: string;
+}
+
 interface ApprovedAnswer {
   questions: EventQuestion[];
   answer: string;
+  citations: Citation[];
   approvedAt: string;
 }
 
@@ -94,6 +101,8 @@ export function LiveEvent({ branding }: LiveEventProps) {
   const [contacts, setContacts] = useState<ContactEntry[]>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
   const [showQrFullscreen, setShowQrFullscreen] = useState(false);
+  const [pendingCitations, setPendingCitations] = useState<Citation[]>([]);
+  const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
   const navigate = useNavigate();
   const heatmapRef = useRef<SVGSVGElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -176,12 +185,14 @@ export function LiveEvent({ branding }: LiveEventProps) {
     if (selectedQuestions.length === 0) return;
     setIsGenerating(true);
     setGeneratedAnswer(null);
+    setPendingCitations([]);
     try {
       const combinedPrompt = selectedQuestions.length === 1
         ? selectedQuestions[0].text
         : `Please address all of the following related community questions in a single, comprehensive response:\n\n${selectedQuestions.map((q, i) => `${i + 1}. ${q.text}`).join('\n')}`;
-      const answer = await liaisonService.chat(combinedPrompt, []);
+      const { answer, citations } = await liaisonService.chatWithCitations(combinedPrompt, []);
       setGeneratedAnswer(answer);
+      setPendingCitations(citations);
     } catch (err: any) {
       setGeneratedAnswer('Error generating answer: ' + err.message);
     } finally {
@@ -195,6 +206,7 @@ export function LiveEvent({ branding }: LiveEventProps) {
     const approved: ApprovedAnswer = {
       questions: selectedQuestions,
       answer: generatedAnswer,
+      citations: pendingCitations,
       approvedAt: new Date().toISOString(),
     };
 
@@ -221,6 +233,7 @@ export function LiveEvent({ branding }: LiveEventProps) {
     setApprovedAnswers(prev => [approved, ...prev]);
     setDisplayAnswer(approved);
     setGeneratedAnswer(null);
+    setPendingCitations([]);
     setSelectedIds(new Set());
     fetchQuestions();
   };
@@ -731,6 +744,31 @@ export function LiveEvent({ branding }: LiveEventProps) {
                       <span className="text-[10px] font-black uppercase tracking-widest">Generated Answer — Pending Approval</span>
                     </div>
                     <p className="text-sm text-white/80 leading-relaxed">{generatedAnswer}</p>
+
+                    {/* Citation chips */}
+                    {pendingCitations.length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-white/30">Sources</p>
+                        <div className="flex flex-wrap gap-2">
+                          {pendingCitations.map((cit, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setSelectedCitation(cit)}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono transition-all hover:scale-105"
+                              style={{
+                                borderColor: `${branding.primaryColor}50`,
+                                backgroundColor: `${branding.primaryColor}10`,
+                                color: branding.primaryColor,
+                              }}
+                            >
+                              <Shield className="w-3 h-3" />
+                              {cit.docName.replace(/\.[^.]+$/, '').slice(0, 30)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex gap-3">
                       <button
                         onClick={handleApprove}
@@ -871,10 +909,103 @@ export function LiveEvent({ branding }: LiveEventProps) {
                 </p>
               </motion.div>
 
+              {/* Citation chips in fullscreen */}
+              {displayAnswer.citations && displayAnswer.citations.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {displayAnswer.citations.map((cit, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedCitation(cit)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-mono transition-all hover:scale-105"
+                      style={{
+                        borderColor: `${branding.primaryColor}50`,
+                        backgroundColor: `${branding.primaryColor}10`,
+                        color: branding.primaryColor,
+                      }}
+                    >
+                      <Shield className="w-3 h-3" />
+                      {cit.docName.replace(/\.[^.]+$/, '').slice(0, 40)}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <p className="text-center text-[9px] text-white/20 uppercase tracking-widest">
                 Powered by LBKH Liaison · Source-Locked AI · All answers grounded in uploaded project documentation
               </p>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Citation Snippet Drawer ───────────────────────────────────────── */}
+      <AnimatePresence>
+        {selectedCitation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center"
+            style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setSelectedCitation(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="w-full max-w-2xl rounded-2xl border p-6 space-y-4"
+              style={{
+                backgroundColor: '#0a0a0a',
+                borderColor: `${branding.primaryColor}40`,
+                boxShadow: `0 0 60px ${branding.primaryColor}20`,
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-2" style={{ color: branding.primaryColor }}>
+                  <Shield className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-sm font-black uppercase tracking-widest">
+                    {selectedCitation.docName.replace(/\.[^.]+$/, '')}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedCitation(null)}
+                  className="p-1 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Snippet */}
+              <div
+                className="p-4 rounded-xl border-l-4 text-sm text-white/80 leading-relaxed italic"
+                style={{
+                  borderLeftColor: branding.primaryColor,
+                  backgroundColor: `${branding.primaryColor}08`,
+                }}
+              >
+                &ldquo;{selectedCitation.snippet}&rdquo;
+              </div>
+
+              {/* Public filing link */}
+              {selectedCitation.publicUrl && (
+                <a
+                  href={selectedCitation.publicUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-xs font-mono transition-colors hover:opacity-80"
+                  style={{ color: branding.secondaryColor }}
+                >
+                  <Layout className="w-3 h-3" />
+                  View Public Filing →
+                </a>
+              )}
+
+              <p className="text-[9px] text-white/20 uppercase tracking-widest">
+                Source-locked · Snippet extracted from verified project documentation
+              </p>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

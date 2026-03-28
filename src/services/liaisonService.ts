@@ -190,6 +190,69 @@ export class LiaisonService {
 
     return response.text ?? '';
   }
+
+  /**
+   * Like chat() but also returns structured citations extracted from the source docs.
+   * Returns { answer: string, citations: { docName: string; snippet: string; publicUrl: string }[] }
+   */
+  async chatWithCitations(
+    message: string,
+    history: { role: string; parts: { text: string }[] }[],
+    benchmarkMode = false
+  ): Promise<{ answer: string; citations: { docName: string; snippet: string; publicUrl: string }[] }> {
+    await loadDocs();
+
+    const systemInstruction = buildSystemInstruction(benchmarkMode);
+
+    // Ask the model to append a JSON citations block at the end
+    const citationInstruction = `
+
+After your answer, append a citations block in this EXACT format (do not skip it, even if you cite only one document):
+
+<CITATIONS_JSON>
+[
+  {
+    "docName": "exact document filename as shown in SOURCE DOCUMENTS",
+    "snippet": "the exact 1-3 sentence excerpt from that document that supports your answer",
+    "publicUrl": "the Public Filing URL for that document, or empty string if none"
+  }
+]
+</CITATIONS_JSON>
+
+Only cite documents you actually drew from. Do not fabricate snippets.`;
+
+    const userMessage = (benchmarkMode ? `[BENCHMARK MODE ACTIVE] ` : '') + message + citationInstruction;
+
+    const response = await this.ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        ...history,
+        { role: "user", parts: [{ text: userMessage }] },
+      ],
+      config: {
+        systemInstruction,
+        temperature: 0.15,
+      },
+    });
+
+    const raw = response.text ?? '';
+
+    // Parse out the citations block
+    const citMatch = raw.match(/<CITATIONS_JSON>([\s\S]*?)<\/CITATIONS_JSON>/);
+    let citations: { docName: string; snippet: string; publicUrl: string }[] = [];
+    if (citMatch) {
+      try {
+        citations = JSON.parse(citMatch[1].trim());
+      } catch {
+        citations = [];
+      }
+    }
+
+    // Strip the citations block from the answer text
+    const answer = raw.replace(/<CITATIONS_JSON>[\s\S]*?<\/CITATIONS_JSON>/g, '').trim();
+
+    return { answer, citations };
+  }
 }
 
 export const liaisonService = new LiaisonService();
