@@ -93,6 +93,7 @@ export function LiveEvent({ branding }: LiveEventProps) {
   const [sidebarTab, setSidebarTab] = useState<'queue' | 'contacts'>('queue');
   const [contacts, setContacts] = useState<ContactEntry[]>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
+  const [showQrFullscreen, setShowQrFullscreen] = useState(false);
   const navigate = useNavigate();
   const heatmapRef = useRef<SVGSVGElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -368,25 +369,32 @@ export function LiveEvent({ branding }: LiveEventProps) {
 
         {/* ── Left Panel: QR + Question Queue ──────────────────────────────── */}
         <aside
-          className="w-96 border-r flex flex-col overflow-hidden"
+          className="w-[350px] border-r flex flex-col overflow-hidden"
           style={{ backgroundColor: `${branding.primaryColor}05`, borderColor: `${branding.primaryColor}20` }}
         >
           {/* QR Code */}
           <div
-            className="p-6 border-b text-center space-y-4"
+            className="p-4 border-b text-center space-y-3"
             style={{ backgroundColor: `${branding.primaryColor}05`, borderColor: `${branding.primaryColor}20` }}
           >
-            <div className="inline-block p-3 bg-white rounded-xl shadow-2xl">
+            <div
+              className="inline-block p-2 bg-white rounded-xl shadow-2xl cursor-pointer hover:scale-[1.02] transition-transform group relative"
+              onClick={() => setShowQrFullscreen(true)}
+              title="Click to expand"
+            >
               <QRCodeSVG
                 value={`${window.location.origin}/ask?event=${EVENT_ID}`}
-                size={512}
+                size={290}
                 level="H"
                 includeMargin={false}
               />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 rounded-xl transition-colors">
+                <Maximize2 className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+              </div>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <h3 className="text-xs font-black uppercase tracking-widest text-white">Scan to Ask</h3>
-              <p className="text-[9px] text-white/40 uppercase tracking-widest">Submit your question anonymously</p>
+              <p className="text-[9px] text-white/40 uppercase tracking-widest">Tap to expand · Submit your question</p>
             </div>
             {/* Webhook URL for SMS providers */}
             <button
@@ -867,6 +875,49 @@ export function LiveEvent({ branding }: LiveEventProps) {
                 Powered by LBKH Liaison · Source-Locked AI · All answers grounded in uploaded project documentation
               </p>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── QR Fullscreen Overlay ──────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showQrFullscreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex flex-col items-center justify-center cursor-pointer"
+            style={{ backgroundColor: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}
+            onClick={() => setShowQrFullscreen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.7, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="flex flex-col items-center gap-8"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-6 bg-white rounded-3xl shadow-2xl" style={{ boxShadow: `0 0 80px ${branding.primaryColor}60` }}>
+                <QRCodeSVG
+                  value={`${window.location.origin}/ask?event=${EVENT_ID}`}
+                  size={520}
+                  level="H"
+                  includeMargin={false}
+                />
+              </div>
+              <div className="text-center space-y-2">
+                <h2 className="text-3xl font-black uppercase tracking-widest text-white">Scan to Ask a Question</h2>
+                <p className="text-white/50 text-sm uppercase tracking-widest">{window.location.origin}/ask</p>
+              </div>
+              <button
+                onClick={() => setShowQrFullscreen(false)}
+                className="flex items-center gap-2 px-6 py-3 rounded-full border text-sm font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                style={{ borderColor: 'rgba(255,255,255,0.2)' }}
+              >
+                <X className="w-4 h-4" /> Close
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
