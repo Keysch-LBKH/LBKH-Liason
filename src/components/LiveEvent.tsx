@@ -180,7 +180,7 @@ export function LiveEvent({ branding }: LiveEventProps) {
       const combinedPrompt = selectedQuestions.length === 1
         ? selectedQuestions[0].text
         : `Please address all of the following related community questions in a single, comprehensive response:\n\n${selectedQuestions.map((q, i) => `${i + 1}. ${q.text}`).join('\n')}`;
-      const answer = await liaisonService.sendMessage(combinedPrompt, []);
+      const answer = await liaisonService.chat(combinedPrompt, []);
       setGeneratedAnswer(answer);
     } catch (err: any) {
       setGeneratedAnswer('Error generating answer: ' + err.message);
@@ -559,14 +559,14 @@ export function LiveEvent({ branding }: LiveEventProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-[8px] font-mono text-white/25">
+                        <span className="text-xs font-semibold text-white/50">
                       {q.displayName ? (
-                        <span style={{ color: `${branding.primaryColor}80` }}>{q.displayName}</span>
+                        <span style={{ color: `${branding.primaryColor}` }}>{q.displayName}</span>
                       ) : (
                         'Anonymous'
                       )}
                     </span>
-                        <span className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
                           q.status === 'answered' ? 'bg-emerald-500/20 text-emerald-400' :
                           q.status === 'processing' ? 'bg-teal-400/20 text-teal-300 animate-pulse' :
                           'bg-white/10 text-white/40'
@@ -574,13 +574,13 @@ export function LiveEvent({ branding }: LiveEventProps) {
                           {q.status}
                         </span>
                       </div>
-                      <p className="text-xs text-white/80 leading-relaxed">{q.text}</p>
+                      <p className="text-sm text-white leading-relaxed font-medium">{q.text}</p>
                       {q.answer && (
                         <div
                           className="mt-2 p-2 border-l-2 rounded-sm"
                           style={{ backgroundColor: `${branding.primaryColor}10`, borderColor: branding.primaryColor }}
                         >
-                          <p className="text-[9px] italic leading-relaxed" style={{ color: branding.primaryColor }}>"{q.answer}"</p>
+                          <p className="text-xs italic leading-relaxed" style={{ color: branding.primaryColor }}>"{q.answer}"</p>
                         </div>
                       )}
                     </div>
