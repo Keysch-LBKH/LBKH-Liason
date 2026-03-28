@@ -17,7 +17,7 @@ const WORKER_URL = import.meta.env.VITE_R2_WORKER_URL || 'https://lbkh-r2-proxy.
 
 export function AskForm({ branding }: AskFormProps) {
   const [searchParams] = useSearchParams();
-  const eventId = searchParams.get('event') || 'default';
+  const eventId = searchParams.get('event') || import.meta.env.VITE_EVENT_ID || 'lbkh';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

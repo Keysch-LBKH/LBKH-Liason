@@ -60,7 +60,7 @@ interface ContactEntry {
 const WORKER_URL = import.meta.env.VITE_R2_WORKER_URL || 'https://lbkh-r2-proxy.mickey-474.workers.dev';
 const UPLOAD_SECRET = import.meta.env.VITE_R2_UPLOAD_SECRET || '';
 const BUCKET = import.meta.env.VITE_R2_BUCKET || 'liaison';
-const EVENT_ID = 'default';
+const EVENT_ID = import.meta.env.VITE_EVENT_ID || 'lbkh';
 
 const TOPIC_COLORS = [
   '#22d3ee', '#a855f7', '#f59e0b', '#10b981', '#ef4444',
