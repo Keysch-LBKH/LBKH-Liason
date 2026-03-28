@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Shield, TrendingUp, Users, Radio, Activity, CheckCircle2,
   Layout, MessageCircle, ChevronDown, Zap, X, CheckSquare,
-  Square, Layers, Eye, Loader2, AlertCircle, RefreshCw,
-  Maximize2, Copy, Check
+  Square, Layers, Loader2, AlertCircle, RefreshCw,
+  Maximize2, Copy, Check, Mail, UserCheck, Download
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
@@ -27,6 +27,7 @@ interface EventQuestion {
   id: string;
   text: string;
   source: string;
+  displayName: string | null;
   status: 'queued' | 'processing' | 'answered';
   topic: string | null;
   answer: string | null;
@@ -46,9 +47,19 @@ interface ApprovedAnswer {
   approvedAt: string;
 }
 
+interface ContactEntry {
+  questionId: string;
+  name: string | null;
+  email: string | null;
+  questionText: string;
+  submittedAt: string;
+  notified: boolean;
+  notifiedAt?: string;
+}
+
 const WORKER_URL = import.meta.env.VITE_R2_WORKER_URL || 'https://lbkh-r2-proxy.mickey-474.workers.dev';
-const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
-const BUCKET = import.meta.env.VITE_R2_BUCKET || 'lbkh-liaison-template';
+const UPLOAD_SECRET = import.meta.env.VITE_R2_UPLOAD_SECRET || '';
+const BUCKET = import.meta.env.VITE_R2_BUCKET || 'liaison';
 const EVENT_ID = 'default';
 
 const TOPIC_COLORS = [
@@ -79,6 +90,9 @@ export function LiveEvent({ branding }: LiveEventProps) {
   const [showModeSwitcher, setShowModeSwitcher] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'queue' | 'contacts'>('queue');
+  const [contacts, setContacts] = useState<ContactEntry[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
   const navigate = useNavigate();
   const heatmapRef = useRef<SVGSVGElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -208,6 +222,44 @@ export function LiveEvent({ branding }: LiveEventProps) {
     setGeneratedAnswer(null);
     setSelectedIds(new Set());
     fetchQuestions();
+  };
+
+  // ── Fetch private contacts log ────────────────────────────────────────────
+  const fetchContacts = useCallback(async () => {
+    setContactsLoading(true);
+    try {
+      const res = await fetch(
+        `${WORKER_URL}/event/contacts?eventId=${EVENT_ID}`,
+        { headers: { 'X-Upload-Secret': UPLOAD_SECRET, 'X-Bucket': BUCKET } }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setContacts(data.contacts || []);
+    } catch (_) {}
+    finally { setContactsLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchContacts(); }, [fetchContacts]);
+
+  const exportContacts = () => {
+    const rows = [
+      ['Name', 'Email', 'Question', 'Submitted At', 'Notified'],
+      ...contacts.map(c => [
+        c.name || 'Anonymous',
+        c.email || '',
+        c.questionText,
+        c.submittedAt,
+        c.notified ? 'Yes' : 'No',
+      ])
+    ];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `event-contacts-${EVENT_ID}-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleCopyWebhook = () => {
@@ -347,9 +399,32 @@ export function LiveEvent({ branding }: LiveEventProps) {
             </button>
           </div>
 
-          {/* Queue header with select-all */}
+          {/* Tab switcher: Queue / Contacts */}
           <div
-            className="p-3 border-b sticky top-0 backdrop-blur-sm z-10 flex justify-between items-center"
+            className="flex border-b"
+            style={{ borderColor: `${branding.primaryColor}20` }}
+          >
+            {(['queue', 'contacts'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => { setSidebarTab(tab); if (tab === 'contacts') fetchContacts(); }}
+                className="flex-1 py-2.5 text-[9px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-1.5"
+                style={sidebarTab === tab ? {
+                  color: branding.primaryColor,
+                  borderBottom: `2px solid ${branding.primaryColor}`,
+                  backgroundColor: `${branding.primaryColor}08`,
+                } : { color: 'rgba(255,255,255,0.3)' }}
+              >
+                {tab === 'queue' ? <Square className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
+                {tab === 'queue' ? `Queue (${queuedCount})` : `Contacts (${contacts.length})`}
+              </button>
+            ))}
+          </div>
+
+          {/* Queue tab: select-all bar */}
+          {sidebarTab === 'queue' && (
+          <div
+            className="p-3 border-b backdrop-blur-sm z-10 flex justify-between items-center"
             style={{ backgroundColor: `${branding.primaryColor}10`, borderColor: `${branding.primaryColor}20` }}
           >
             <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Question Queue</span>
@@ -368,16 +443,84 @@ export function LiveEvent({ branding }: LiveEventProps) {
               </button>
             </div>
           </div>
+          )}
 
           {/* Error banner */}
-          {loadError && (
+          {loadError && sidebarTab === 'queue' && (
             <div className="px-4 py-2 bg-red-500/10 border-b border-red-500/20 flex items-center gap-2">
               <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
               <p className="text-[9px] text-red-400">{loadError}</p>
             </div>
           )}
 
-          {/* Question list */}
+          {/* ── Contacts tab ─────────────────────────────────────────────── */}
+          {sidebarTab === 'contacts' && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+              {/* Contacts toolbar */}
+              <div
+                className="p-3 border-b flex justify-between items-center"
+                style={{ borderColor: `${branding.primaryColor}20` }}
+              >
+                <span className="text-[9px] text-white/30 uppercase tracking-widest">
+                  {contacts.filter(c => c.email).length} with email
+                </span>
+                <button
+                  onClick={exportContacts}
+                  disabled={contacts.length === 0}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors disabled:opacity-30"
+                  style={{ backgroundColor: `${branding.primaryColor}20`, color: branding.primaryColor }}
+                >
+                  <Download className="w-3 h-3" />
+                  Export CSV
+                </button>
+              </div>
+
+              {contactsLoading && (
+                <div className="flex items-center justify-center p-6">
+                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: branding.primaryColor }} />
+                </div>
+              )}
+
+              {!contactsLoading && contacts.length === 0 && (
+                <div className="p-6 text-center">
+                  <UserCheck className="w-6 h-6 text-white/10 mx-auto mb-2" />
+                  <p className="text-[10px] text-white/25 uppercase tracking-widest">No contacts yet</p>
+                  <p className="text-[9px] text-white/15 mt-1">Submitters who provide their name or email will appear here.</p>
+                </div>
+              )}
+
+              <div className="divide-y divide-white/5">
+                {contacts.map((c, i) => (
+                  <div key={i} className="p-3 space-y-1.5 hover:bg-white/5 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <UserCheck className="w-3 h-3" style={{ color: branding.primaryColor }} />
+                        <span className="text-[10px] font-black text-white">{c.name || 'Anonymous'}</span>
+                      </div>
+                      {c.notified && (
+                        <span className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">Notified</span>
+                      )}
+                    </div>
+                    {c.email && (
+                      <a
+                        href={`mailto:${c.email}`}
+                        className="flex items-center gap-1 text-[9px] font-mono transition-colors hover:opacity-80"
+                        style={{ color: `${branding.primaryColor}80` }}
+                      >
+                        <Mail className="w-2.5 h-2.5" />
+                        {c.email}
+                      </a>
+                    )}
+                    <p className="text-[9px] text-white/40 leading-relaxed line-clamp-2">{c.questionText}</p>
+                    <p className="text-[8px] text-white/20 font-mono">{new Date(c.submittedAt).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Queue tab ────────────────────────────────────────────────── */}
+          {sidebarTab === 'queue' && (
           <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-white/5">
             {questions.length === 0 && !loadError && (
               <div className="p-6 text-center">
@@ -408,7 +551,13 @@ export function LiveEvent({ branding }: LiveEventProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-[8px] font-mono text-white/25">{q.source}</span>
+                        <span className="text-[8px] font-mono text-white/25">
+                      {q.displayName ? (
+                        <span style={{ color: `${branding.primaryColor}80` }}>{q.displayName}</span>
+                      ) : (
+                        'Anonymous'
+                      )}
+                    </span>
                         <span className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
                           q.status === 'answered' ? 'bg-emerald-500/20 text-emerald-400' :
                           q.status === 'processing' ? 'bg-teal-400/20 text-teal-300 animate-pulse' :
@@ -432,6 +581,7 @@ export function LiveEvent({ branding }: LiveEventProps) {
               );
             })}
           </div>
+          )}
         </aside>
 
         {/* ── Main Panel ───────────────────────────────────────────────────── */}

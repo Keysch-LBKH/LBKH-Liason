@@ -7,6 +7,7 @@ import { LiveEvent } from './components/LiveEvent';
 import { TourProvider } from './components/TourContext';
 import { TourOverlay } from './components/TourOverlay';
 import { GoogleAuthGuard } from './components/GoogleAuthGuard';
+import { AskForm } from './components/AskForm';
 
 const STORAGE_KEY = 'lbkh_liaison_state';
 
@@ -91,6 +92,12 @@ export default function App() {
                 <LiveEvent branding={branding} />
               </GoogleAuthGuard>
             }
+          />
+
+          {/* Public question submission form (QR code destination) */}
+          <Route
+            path="/ask"
+            element={<AskForm branding={branding} />}
           />
 
           {/* Fallback */}
