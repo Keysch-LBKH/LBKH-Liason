@@ -8,6 +8,7 @@ import { TourProvider } from './components/TourContext';
 import { TourOverlay } from './components/TourOverlay';
 import { GoogleAuthGuard } from './components/GoogleAuthGuard';
 import { AskForm } from './components/AskForm';
+import { ThemeProvider } from './components/ThemeContext';
 
 const STORAGE_KEY = 'lbkh_liaison_state';
 
@@ -57,53 +58,55 @@ export default function App() {
   const setBranding = (b: typeof branding) => setBrandingRaw(b);
 
   return (
-    <TourProvider>
-      <Router>
-        {/* Tour overlay renders on top of everything, across all routes */}
-        <TourOverlay />
+    <ThemeProvider>
+      <TourProvider>
+        <Router>
+          {/* Tour overlay renders on top of everything, across all routes */}
+          <TourOverlay />
 
-        <Routes>
-          {/* Main Dashboard Route */}
-          <Route
-            path="/"
-            element={isLive ? <Dashboard branding={branding} /> : <ComingSoon branding={branding} />}
-          />
+          <Routes>
+            {/* Main Dashboard Route */}
+            <Route
+              path="/"
+              element={isLive ? <Dashboard branding={branding} /> : <ComingSoon branding={branding} />}
+            />
 
-          {/* Settings Route — protected by Google Auth */}
-          <Route
-            path="/settings"
-            element={
-              <GoogleAuthGuard branding={branding}>
-                <ProjectSettings
-                  isLive={isLive}
-                  setIsLive={setIsLive}
-                  branding={branding}
-                  setBranding={setBranding}
-                />
-              </GoogleAuthGuard>
-            }
-          />
+            {/* Settings Route — protected by Google Auth */}
+            <Route
+              path="/settings"
+              element={
+                <GoogleAuthGuard branding={branding}>
+                  <ProjectSettings
+                    isLive={isLive}
+                    setIsLive={setIsLive}
+                    branding={branding}
+                    setBranding={setBranding}
+                  />
+                </GoogleAuthGuard>
+              }
+            />
 
-          {/* Live Event Route — protected by Google Auth */}
-          <Route
-            path="/event"
-            element={
-              <GoogleAuthGuard branding={branding}>
-                <LiveEvent branding={branding} />
-              </GoogleAuthGuard>
-            }
-          />
+            {/* Live Event Route — protected by Google Auth */}
+            <Route
+              path="/event"
+              element={
+                <GoogleAuthGuard branding={branding}>
+                  <LiveEvent branding={branding} />
+                </GoogleAuthGuard>
+              }
+            />
 
-          {/* Public question submission form (QR code destination) */}
-          <Route
-            path="/ask"
-            element={<AskForm branding={branding} />}
-          />
+            {/* Public question submission form (QR code destination) */}
+            <Route
+              path="/ask"
+              element={<AskForm branding={branding} />}
+            />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
-    </TourProvider>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </TourProvider>
+    </ThemeProvider>
   );
 }

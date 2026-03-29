@@ -11,6 +11,7 @@ import { PitchDeck } from './PitchDeck';
 import { Footer } from './Footer';
 import { AnimatePresence, motion } from 'motion/react';
 import { TourSpotlight, TourLaunchButton } from './TourOverlay';
+import { ThemeToggle } from './ThemeToggle';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -327,6 +328,7 @@ export function Dashboard({ branding }: DashboardProps) {
               <span className="text-[8px] font-mono opacity-60 uppercase">{benchmarkMode ? 'Engaged' : 'Siloed'}</span>
             </div>
           </button>
+          <ThemeToggle />
           <TourLaunchButton />
           <div className="hidden md:flex flex-col items-end gap-1">
             <div className="flex items-center gap-2 text-[10px] font-mono">

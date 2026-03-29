@@ -17,9 +17,117 @@
   body {
     @apply bg-[#050505] text-white font-sans;
   }
+  /* Light mode — white background, black text, maximum readability */
+  [data-theme="light"] body {
+    background-color: #ffffff !important;
+    color: #0a0a0a !important;
+  }
 }
 
-/* Main background — deep teal-dark instead of purple-dark */
+/* ============================================================
+   LIGHT MODE GLOBAL OVERRIDES
+   ============================================================ */
+
+/* Base backgrounds and text */
+[data-theme="light"] .liaison-bg {
+  background: #f4f4f4 !important;
+}
+[data-theme="light"] .liaison-bg::before {
+  opacity: 0 !important;
+}
+[data-theme="light"] .wireframe-grid {
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px) !important;
+}
+
+/* Cards and panels */
+[data-theme="light"] .data-card {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border-color: rgba(0, 181, 168, 0.3) !important;
+}
+[data-theme="light"] .glass-morphism {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 181, 168, 0.25) !important;
+}
+
+/* Text color overrides — white text → dark text */
+[data-theme="light"] .text-white {
+  color: #0a0a0a !important;
+}
+[data-theme="light"] .text-white\/40,
+[data-theme="light"] .text-white\/50,
+[data-theme="light"] .text-white\/60,
+[data-theme="light"] .text-white\/70,
+[data-theme="light"] .text-white\/80,
+[data-theme="light"] .text-white\/90 {
+  color: rgba(10, 10, 10, 0.6) !important;
+}
+[data-theme="light"] .text-gray-100,
+[data-theme="light"] .text-gray-200,
+[data-theme="light"] .text-gray-300 {
+  color: #222 !important;
+}
+[data-theme="light"] .text-gray-400,
+[data-theme="light"] .text-gray-500 {
+  color: #555 !important;
+}
+
+/* Background overrides — dark backgrounds → white/light */
+[data-theme="light"] .bg-black\/80,
+[data-theme="light"] .bg-black\/90,
+[data-theme="light"] .bg-black\/60,
+[data-theme="light"] .bg-black\/40,
+[data-theme="light"] .bg-black\/20 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+[data-theme="light"] .bg-white\/5,
+[data-theme="light"] .bg-white\/3 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+[data-theme="light"] .bg-\[\#050505\] {
+  background-color: #ffffff !important;
+}
+
+/* Borders */
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-white\/20,
+[data-theme="light"] .border-white\/30 {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Header */
+[data-theme="light"] header {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+  border-bottom-color: rgba(0, 181, 168, 0.25) !important;
+  color: #0a0a0a !important;
+}
+
+/* Input fields */
+[data-theme="light"] input,
+[data-theme="light"] textarea {
+  background-color: #ffffff !important;
+  color: #0a0a0a !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 181, 168, 0.35) !important;
+}
+
+/* ============================================================
+   DARK MODE STYLES (unchanged)
+   ============================================================ */
+
+/* Main background */
 .liaison-bg {
   background: radial-gradient(circle at 50% 50%, #071a19 0%, #050505 100%);
   position: relative;
