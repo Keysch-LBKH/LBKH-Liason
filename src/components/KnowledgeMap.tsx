@@ -169,7 +169,12 @@ export function KnowledgeMap({ branding, onAsk }: KnowledgeMapProps) {
     setLoading(true);
     setError(null);
     try {
-      const result = await liaisonService.generateMindMapTree(force);
+      let result = await liaisonService.generateMindMapTree(force);
+      // Retry once after a short delay in case docs were still loading on first call
+      if (!result) {
+        await new Promise((r) => setTimeout(r, 1500));
+        result = await liaisonService.generateMindMapTree(force);
+      }
       if (result) {
         setTree(result);
         setExpanded(new Set());

@@ -20,25 +20,27 @@ import { fetchAllDocumentTexts } from "./r2Service";
 // ── Document cache (refreshed on first chat of each session) ─────────────────
 let _sourceDocs: { name: string; text: string; publicUrl: string }[] | null = null;
 let _benchmarkDocs: { name: string; text: string; publicUrl: string }[] | null = null;
-let _docsLoading = false;
+let _docsLoadingPromise: Promise<void> | null = null;
 
-async function loadDocs(force = false) {
-  if ((_sourceDocs !== null && _benchmarkDocs !== null) && !force) return;
-  if (_docsLoading) return;
-  _docsLoading = true;
-  try {
-    const [sources, benchmarks] = await Promise.all([
-      fetchAllDocumentTexts('sources'),
-      fetchAllDocumentTexts('benchmarks'),
-    ]);
-    _sourceDocs = sources;
-    _benchmarkDocs = benchmarks;
-  } catch {
-    _sourceDocs = _sourceDocs ?? [];
-    _benchmarkDocs = _benchmarkDocs ?? [];
-  } finally {
-    _docsLoading = false;
-  }
+function loadDocs(force = false): Promise<void> {
+  if ((_sourceDocs !== null && _benchmarkDocs !== null) && !force) return Promise.resolve();
+  if (_docsLoadingPromise && !force) return _docsLoadingPromise;
+  _docsLoadingPromise = (async () => {
+    try {
+      const [sources, benchmarks] = await Promise.all([
+        fetchAllDocumentTexts('sources'),
+        fetchAllDocumentTexts('benchmarks'),
+      ]);
+      _sourceDocs = sources;
+      _benchmarkDocs = benchmarks;
+    } catch {
+      _sourceDocs = _sourceDocs ?? [];
+      _benchmarkDocs = _benchmarkDocs ?? [];
+    } finally {
+      _docsLoadingPromise = null;
+    }
+  })();
+  return _docsLoadingPromise;
 }
 
 function buildDocBlock(docs: { name: string; text: string; publicUrl: string }[], label: string): string {
@@ -327,7 +329,14 @@ Return ONLY a JSON array of 3 strings, no other text. Example: ["What is the pro
 
   async generateMindMapTree(force = false): Promise<MindMapNode | null> {
     if (this._mindMapTree && !force) return this._mindMapTree;
-    if (this._mindMapLoading) return null;
+    // Wait for any in-progress load rather than bailing out with null
+    if (this._mindMapLoading) {
+      await new Promise<void>((resolve) => {
+        const check = () => { if (!this._mindMapLoading) resolve(); else setTimeout(check, 100); };
+        check();
+      });
+      if (this._mindMapTree) return this._mindMapTree;
+    }
     this._mindMapLoading = true;
     try {
       // Load source docs only — never pass benchmarks to this function
@@ -392,7 +401,9 @@ JSON format:
   /** Bust the mind map cache so next call to generateMindMapTree() rebuilds from fresh docs */
   invalidateMindMap() {
     this._mindMapTree = null;
+    this._mindMapLoading = false;
     _sourceDocs = null; // also force doc reload
+    _docsLoadingPromise = null;
   }
 }
 
