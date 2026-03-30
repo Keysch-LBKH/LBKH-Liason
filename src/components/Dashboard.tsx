@@ -49,6 +49,8 @@ export function Dashboard({ branding }: DashboardProps) {
   const [benchmarkMode, setBenchmarkMode] = useState(false);
   const [showPitchDeck, setShowPitchDeck] = useState(false);
   const [showModeSwitcher, setShowModeSwitcher] = useState(false);
+  const [starterSuggestions, setStarterSuggestions] = useState<string[]>([]);
+  const [loadingStarters, setLoadingStarters] = useState(true);
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +59,17 @@ export function Dashboard({ branding }: DashboardProps) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    liaisonService.generateStarterSuggestions()
+      .then((s) => setStarterSuggestions(s))
+      .catch(() => setStarterSuggestions([
+        'What is the scope of this project?',
+        'How will this project affect the community?',
+        'What environmental considerations are included?',
+      ]))
+      .finally(() => setLoadingStarters(false));
+  }, []);
 
   const parseResponse = (text: string) => {
     const suggestionMatch = text.match(/SUGGESTIONS:\s*(\[.*\])/);
@@ -410,6 +423,36 @@ export function Dashboard({ branding }: DashboardProps) {
             ref={scrollRef}
             className="flex-1 overflow-y-auto p-8 space-y-8 scroll-smooth"
           >
+            {/* Starter suggestion chips — shown only before user sends first message */}
+            {messages.length === 1 && (
+              <div className="flex flex-col items-start gap-3 pb-4">
+                <p
+                  className="text-[10px] font-black uppercase tracking-[0.2em]"
+                  style={{ color: branding.secondaryColor }}
+                >
+                  {loadingStarters ? 'Preparing suggestions…' : 'Start with a question'}
+                </p>
+                {!loadingStarters && (
+                  <div className="flex flex-wrap gap-2">
+                    {starterSuggestions.map((s, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSend(s)}
+                        disabled={isLoading}
+                        className="text-[12px] border px-4 py-2 rounded-full transition-all text-left font-bold hover:opacity-80 disabled:opacity-40"
+                        style={{
+                          borderColor: branding.primaryColor + '60',
+                          color: branding.primaryColor,
+                          backgroundColor: branding.primaryColor + '10',
+                        }}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {messages.map((m, i) => (
               <div 
                 key={i} 

@@ -259,6 +259,61 @@ Only cite documents you actually drew from. Do not fabricate snippets.`;
 
     return { answer, citations };
   }
+
+  /**
+   * Generates 3 starter questions based on the loaded source documents.
+   * ~40% of the time one question will be a source-vs-benchmark comparison.
+   * Returns an array of 3 question strings.
+   */
+  async generateStarterSuggestions(): Promise<string[]> {
+    await loadDocs();
+    const sources = _sourceDocs ?? [];
+    const benchmarks = _benchmarkDocs ?? [];
+    const hasBenchmarks = benchmarks.length > 0;
+    const includeBenchmark = hasBenchmarks && Math.random() < 0.4;
+
+    const sourceNames = sources.map((d) => d.name).join(', ');
+    const benchmarkNames = benchmarks.map((d) => d.name).join(', ');
+
+    const docContext = sources.length > 0
+      ? `Source documents available: ${sourceNames}`
+      : 'No source documents loaded yet.';
+    const benchmarkContext = includeBenchmark && benchmarkNames
+      ? `Benchmark/comparison documents available: ${benchmarkNames}`
+      : '';
+
+    const prompt = `You are generating starter conversation questions for a public-facing project information chatbot.
+
+${docContext}
+${benchmarkContext}
+
+Generate exactly 3 short, natural questions a community member might ask about this project.
+${includeBenchmark ? 'One of the 3 questions should ask for a comparison between the project and the benchmark/comparison data.' : 'All 3 questions should focus on the source project data.'}
+Questions should be concise (under 15 words each), conversational, and directly answerable from the documents.
+Return ONLY a JSON array of 3 strings, no other text. Example: ["What is the project timeline?", "How will traffic be affected?", "What environmental studies were done?"]`;
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: { temperature: 0.7 },
+      });
+      const raw = (response.text ?? '').trim();
+      const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed) && parsed.length >= 3) {
+        return parsed.slice(0, 3) as string[];
+      }
+    } catch (err) {
+      console.warn('Failed to generate starter suggestions:', err);
+    }
+    // Fallback defaults
+    return [
+      'What is the scope of this project?',
+      'How will this project affect the community?',
+      'What environmental considerations are included?',
+    ];
+  }
 }
 
 export const liaisonService = new LiaisonService();
