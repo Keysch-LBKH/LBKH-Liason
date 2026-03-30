@@ -234,15 +234,6 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
         assetType: newAssetType,
         size: file.size,
       }]);
-      // Auto-set as header logo if the asset is a visual and the name contains 'logo'
-      if (newAssetType === 'visual' && newAssetName.trim().toLowerCase().includes('logo')) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const dataUrl = ev.target?.result as string;
-          setBranding({ ...branding, logo: dataUrl });
-        };
-        reader.readAsDataURL(file);
-      }
       setNewAssetName('');
     } catch (err) {
       setVisualUploadError('Upload failed. Please try again.');
@@ -259,22 +250,6 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
         headers: { 'X-Upload-Secret': import.meta.env.VITE_R2_UPLOAD_SECRET, 'X-Bucket': import.meta.env.VITE_R2_BUCKET },
       });
       setVisualAssets(prev => prev.filter(a => a.key !== key));
-    } catch { /* ignore */ }
-  };
-
-  const handleSetAsLogo = async (key: string) => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_R2_WORKER_URL}/get/${encodeURIComponent(key)}`, {
-        headers: { 'X-Upload-Secret': import.meta.env.VITE_R2_UPLOAD_SECRET, 'X-Bucket': import.meta.env.VITE_R2_BUCKET },
-      });
-      if (!res.ok) throw new Error('Failed to fetch asset');
-      const blob = await res.blob();
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
-        setBranding({ ...branding, logo: dataUrl });
-      };
-      reader.readAsDataURL(blob);
     } catch { /* ignore */ }
   };
 
@@ -772,20 +747,8 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                             <p className="text-sm font-bold text-white/80 truncate">{asset.displayName}</p>
                             <p className="text-[9px] font-mono text-white/30 uppercase">
                               {asset.assetType} • {(asset.size / 1024).toFixed(1)} KB
-                              {branding.logo && branding.logo.length > 100 && asset.assetType === 'visual' && (
-                                <span className="ml-2 text-teal-400">• active logo</span>
-                              )}
                             </p>
                           </div>
-                          {asset.assetType === 'visual' && (
-                            <button
-                              onClick={() => handleSetAsLogo(asset.key)}
-                              title="Use as header logo"
-                              className="p-2 rounded-lg text-white/20 hover:text-teal-400 hover:bg-teal-500/10 transition-colors opacity-0 group-hover:opacity-100 text-[9px] font-black uppercase tracking-widest flex items-center gap-1"
-                            >
-                              <Shield className="w-4 h-4" />
-                            </button>
-                          )}
                           <button
                             onClick={() => handleDeleteVisual(asset.key)}
                             className="p-2 rounded-lg text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
