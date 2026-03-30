@@ -8,6 +8,7 @@
  * - Tree is AI-generated from source documents only (never benchmarks)
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2, Network, RefreshCw, X, ChevronRight, MessageCircle } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { liaisonService, type MindMapNode } from '../services/liaisonService';
@@ -260,16 +261,17 @@ export function KnowledgeMap({ branding, onAsk }: KnowledgeMapProps) {
         )}
       </div>
 
-      {/* ── Full-screen popup ── */}
-      <AnimatePresence>
-        {open && tree && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-            onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
-          >
+      {/* ── Full-screen popup — portalled to body to escape overflow-y-auto stacking context ── */}
+      {createPortal(
+        <AnimatePresence>
+          {open && tree && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
+            >
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -396,9 +398,11 @@ export function KnowledgeMap({ branding, onAsk }: KnowledgeMapProps) {
                 </p>
               </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }
