@@ -190,7 +190,7 @@ export function LiveEvent({ branding }: LiveEventProps) {
       const combinedPrompt = selectedQuestions.length === 1
         ? selectedQuestions[0].text
         : `Please address all of the following related community questions in a single, comprehensive response:\n\n${selectedQuestions.map((q, i) => `${i + 1}. ${q.text}`).join('\n')}`;
-      const { answer, citations } = await liaisonService.chatWithCitations(combinedPrompt, []);
+      const { answer, citations } = await liaisonService.chatWithCitations(combinedPrompt, [], false, 'liveEvent');
       setGeneratedAnswer(answer);
       setPendingCitations(citations);
     } catch (err: any) {

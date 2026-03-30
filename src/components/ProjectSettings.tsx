@@ -212,7 +212,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
         });
         if (!res.ok) return;
         const data = await res.json();
-        const items: VisualAsset[] = (data.objects || []).map((obj: Record<string, unknown>) => ({
+        const items: VisualAsset[] = (data.files || []).map((obj: Record<string, unknown>) => ({
           key: obj.key as string,
           name: obj.name as string,
           displayName: (obj.displayName as string) || (obj.name as string),

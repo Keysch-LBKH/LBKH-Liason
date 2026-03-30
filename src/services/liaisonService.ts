@@ -153,6 +153,65 @@ ${benchmarkBlock}` : ''}
 `.trim();
 }
 
+// ── Widget instruction (public-facing, source-locked, no persuasion frameworks) ──────────────
+function buildWidgetInstruction(): string {
+  const sourceDocs = _sourceDocs ?? [];
+  const sourceBlock = buildDocBlock(sourceDocs, 'source');
+
+  return `
+You are a Project Information Assistant — a friendly, helpful, and accurate AI that answers questions about this project using verified project documents.
+
+You are NOT a general-purpose chatbot. You only answer questions that can be addressed from the provided source documents. You do not speculate, invent facts, or discuss topics outside the project.
+
+CITATION RULES:
+- Every factual claim must be supported by a citation in this format: [SOURCE: "exact quote" — DocumentName]
+- If the document has a Public Filing URL, use: [SOURCE: "exact quote" — DocumentName](URL)
+- Snippets must be verbatim, max 200 characters.
+- If a question cannot be answered from the documents, say: "I don't have specific information on that in the project documents. You can reach the project team directly for more detail."
+
+TONE:
+- Warm, clear, and direct. No jargon. No corporate speak.
+- Keep answers concise — 2–4 short paragraphs maximum.
+- Do not use persuasion techniques, reframing, or psychological frameworks.
+- Do not mention LBKH, the product, or how the system works.
+
+FOLLOW-UP SUGGESTIONS: At the end of every response, provide exactly 3 suggested follow-up questions as a JSON array on a single line: SUGGESTIONS: ["Question one?", "Question two?", "Question three?"]
+
+── SOURCE DOCUMENTS ─────────────────────────────────────────────────────────
+${sourceBlock}
+`.trim();
+}
+
+// ── Live Event instruction (briefing mode for a human presenter) ─────────────
+function buildLiveEventInstruction(): string {
+  const sourceDocs = _sourceDocs ?? [];
+  const sourceBlock = buildDocBlock(sourceDocs, 'source');
+
+  return `
+You are a Live Event Briefing Assistant. You are helping a human presenter respond to audience questions in real time. Your job is to give the presenter clear, scannable talking points they can read aloud or glance at on a second screen — not long prose.
+
+OUTPUT FORMAT — ALWAYS follow this structure:
+1. ONE sentence direct answer (the headline)
+2. 2–4 bullet points of supporting detail (short, plain English, no jargon)
+3. ONE source attribution line: Source: DocumentName
+
+RULES:
+- Never write paragraphs. Bullets only after the headline.
+- Keep each bullet under 15 words.
+- Only use information from the provided source documents.
+- If the answer is not in the documents, output: "Not in current documents — flag for follow-up."
+- Do not use citation footnote format. Just name the document at the end.
+- Do not use persuasion techniques or psychological frameworks.
+- Do not suggest follow-up questions.
+- Do not mention LBKH or the product.
+
+── SOURCE DOCUMENTS ─────────────────────────────────────────────────────────
+${sourceBlock}
+`.trim();
+}
+
+export type ChatContext = 'dashboard' | 'widget' | 'liveEvent';
+
 export class LiaisonService {
   private ai: GoogleGenAI;
 
@@ -173,14 +232,18 @@ export class LiaisonService {
   async chat(
     message: string,
     history: { role: string; parts: { text: string }[] }[],
-    benchmarkMode = false
+    benchmarkMode = false,
+    context: ChatContext = 'dashboard'
   ): Promise<string> {
     // Ensure docs are loaded before first chat
     await loadDocs();
 
-    const systemInstruction = buildSystemInstruction(benchmarkMode);
+    const systemInstruction =
+      context === 'widget' ? buildWidgetInstruction() :
+      context === 'liveEvent' ? buildLiveEventInstruction() :
+      buildSystemInstruction(benchmarkMode);
 
-    const userMessage = benchmarkMode
+    const userMessage = (benchmarkMode && context === 'dashboard')
       ? `[BENCHMARK MODE ACTIVE] ${message}`
       : message;
 
@@ -206,11 +269,15 @@ export class LiaisonService {
   async chatWithCitations(
     message: string,
     history: { role: string; parts: { text: string }[] }[],
-    benchmarkMode = false
+    benchmarkMode = false,
+    context: ChatContext = 'dashboard'
   ): Promise<{ answer: string; citations: { docName: string; snippet: string; publicUrl: string }[] }> {
     await loadDocs();
 
-    const systemInstruction = buildSystemInstruction(benchmarkMode);
+    const systemInstruction =
+      context === 'widget' ? buildWidgetInstruction() :
+      context === 'liveEvent' ? buildLiveEventInstruction() :
+      buildSystemInstruction(benchmarkMode);
 
     // Ask the model to append a JSON citations block at the end
     const citationInstruction = `
