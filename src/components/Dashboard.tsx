@@ -229,7 +229,7 @@ export function Dashboard({ branding }: DashboardProps) {
   return (
     <div className="flex flex-col h-screen liaison-bg wireframe-grid">
       {/* Header */}
-      <header data-tour-id="tour-header" className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-teal-400/30 flex justify-between items-center shadow-2xl relative z-10">
+      <header data-tour-id="tour-header" className="bg-black/80 backdrop-blur-md text-white p-6 border-b border-teal-400/30 flex justify-between items-center shadow-2xl relative z-50">
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2 group">
             {branding.logo ? (

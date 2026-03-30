@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Footer } from './Footer';
 import { uploadDocument, listDocuments, deleteDocument } from '../services/r2Service';
+import { liaisonService } from '../services/liaisonService';
 import { DocumentViewer } from './DocumentViewer';
 
 interface Branding {
@@ -147,12 +148,27 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   const handleResetDemo = async () => {
     setResetting(true);
     try {
+      // Delete all source and benchmark documents from R2
       for (const file of sources) await deleteDocument(file.id);
       for (const file of benchmarkFiles) await deleteDocument(file.id);
       setSources([]);
       setBenchmarkFiles([]);
       setSelectedFile(null);
       setSelectedBenchmarkFile(null);
+
+      // Clear live event question queue and contacts log
+      const workerUrl = import.meta.env.VITE_R2_WORKER_URL as string;
+      const uploadSecret = import.meta.env.VITE_R2_UPLOAD_SECRET as string;
+      const eventId = import.meta.env.VITE_EVENT_ID || 'lbkh';
+      const headers = { 'X-Upload-Secret': uploadSecret };
+      await Promise.allSettled([
+        fetch(`${workerUrl}/event/clear?eventId=${eventId}`, { method: 'DELETE', headers }),
+        fetch(`${workerUrl}/event/contacts/clear?eventId=${eventId}`, { method: 'DELETE', headers }),
+      ]);
+
+      // Invalidate AI mind map cache so it rebuilds on next live session
+      liaisonService.invalidateMindMap();
+
       setIsLive(false);
       setShowResetConfirm(false);
     } catch (err: any) {
