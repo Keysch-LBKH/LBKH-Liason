@@ -123,6 +123,45 @@
   background: rgba(0, 181, 168, 0.35) !important;
 }
 
+/* ── Chat window — maximum contrast for projection/display readability ── */
+/* Override prose-invert (forces white text) → near-black in light mode */
+[data-theme="light"] .prose-invert {
+  --tw-prose-body: #0a0a0a !important;
+  --tw-prose-headings: #000000 !important;
+  --tw-prose-bold: #000000 !important;
+  --tw-prose-links: #007a70 !important;
+  --tw-prose-code: #111111 !important;
+  --tw-prose-quotes: #111111 !important;
+  color: #0a0a0a !important;
+}
+[data-theme="light"] .prose-invert p,
+[data-theme="light"] .prose-invert li,
+[data-theme="light"] .prose-invert span,
+[data-theme="light"] .prose-invert strong,
+[data-theme="light"] .prose-invert em,
+[data-theme="light"] .prose-invert h1,
+[data-theme="light"] .prose-invert h2,
+[data-theme="light"] .prose-invert h3 {
+  color: #0a0a0a !important;
+}
+/* AI response bubble background — white card with dark border */
+[data-theme="light"] .bg-white\/5 {
+  background-color: #f8f8f8 !important;
+  border-color: rgba(0, 181, 168, 0.3) !important;
+}
+/* Timestamp labels */
+[data-theme="light"] .text-white\/30 {
+  color: rgba(0, 0, 0, 0.45) !important;
+}
+/* Suggested follow-up buttons */
+[data-theme="light"] .prose-p\:text-white\/90 p {
+  color: #0a0a0a !important;
+}
+/* Loading indicator */
+[data-theme="light"] .animate-pulse {
+  color: #007a70 !important;
+}
+
 /* ============================================================
    DARK MODE STYLES (unchanged)
    ============================================================ */
