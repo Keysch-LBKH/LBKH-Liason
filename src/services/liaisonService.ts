@@ -314,6 +314,92 @@ Return ONLY a JSON array of 3 strings, no other text. Example: ["What is the pro
       'What environmental considerations are included?',
     ];
   }
+
+  /**
+   * Generates a hierarchical topic tree from source documents only (never benchmarks).
+   * Returns a tree structure: { id, label, children: [{ id, label, children: [...] }] }
+   * Depth is always 3: root → topic → subtopic.
+   * Should only be called when the app is live and source docs are loaded.
+   * Pass force=true to bust the cache when a new document is uploaded.
+   */
+  private _mindMapTree: MindMapNode | null = null;
+  private _mindMapLoading = false;
+
+  async generateMindMapTree(force = false): Promise<MindMapNode | null> {
+    if (this._mindMapTree && !force) return this._mindMapTree;
+    if (this._mindMapLoading) return null;
+    this._mindMapLoading = true;
+    try {
+      // Load source docs only — never pass benchmarks to this function
+      await loadDocs(force);
+      const sources = _sourceDocs ?? [];
+      if (sources.length === 0) return null;
+
+      const sourceBlock = sources
+        .map((d) => `--- ${d.name} ---\n${d.text.slice(0, 6000)}\n---`)
+        .join('\n\n');
+
+      const prompt = `You are analyzing project documents to build an interactive mind map for a public information portal.
+
+SOURCE DOCUMENTS:
+${sourceBlock}
+
+Based ONLY on the content of these documents, generate a hierarchical topic tree with exactly this structure:
+- 1 root node (the project name or a short title derived from the documents)
+- 4 to 6 first-level topic nodes (major themes: e.g. "Traffic & Transportation", "Environmental Impact", "Community Benefits", "Engineering & Design", "Timeline & Phases", "Regulatory Compliance")
+- 2 to 4 subtopic nodes per topic (specific aspects covered in the documents)
+
+Rules:
+- Every node label must be short (2-5 words max)
+- Only include topics that are actually covered in the source documents
+- Do NOT include benchmark or comparison topics
+- Return ONLY valid JSON, no markdown, no explanation
+
+JSON format:
+{
+  "id": "root",
+  "label": "Project Name",
+  "children": [
+    {
+      "id": "t1",
+      "label": "Topic One",
+      "children": [
+        { "id": "t1s1", "label": "Subtopic A", "children": [] },
+        { "id": "t1s2", "label": "Subtopic B", "children": [] }
+      ]
+    }
+  ]
+}`;
+
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: { temperature: 0.2 },
+      });
+      const raw = (response.text ?? '').trim();
+      const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+      const parsed = JSON.parse(cleaned) as MindMapNode;
+      this._mindMapTree = parsed;
+      return parsed;
+    } catch (err) {
+      console.warn('Failed to generate mind map tree:', err);
+      return null;
+    } finally {
+      this._mindMapLoading = false;
+    }
+  }
+
+  /** Bust the mind map cache so next call to generateMindMapTree() rebuilds from fresh docs */
+  invalidateMindMap() {
+    this._mindMapTree = null;
+    _sourceDocs = null; // also force doc reload
+  }
+}
+
+export interface MindMapNode {
+  id: string;
+  label: string;
+  children: MindMapNode[];
 }
 
 export const liaisonService = new LiaisonService();

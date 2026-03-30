@@ -572,7 +572,7 @@ export function Dashboard({ branding }: DashboardProps) {
             className="data-card p-6 border-opacity-20"
             style={{ borderColor: branding.primaryColor }}
           >
-            <KnowledgeMap branding={branding} />
+            <KnowledgeMap branding={branding} onAsk={(q) => handleSend(q)} />
           </div>
 
           {/* Media & Assets Panel */}
