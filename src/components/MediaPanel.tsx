@@ -59,7 +59,7 @@ export function MediaPanel({ branding }: MediaPanelProps) {
         if (!res.ok) throw new Error('Failed to list media');
         const data = await res.json();
         // Worker returns objects with key, name, size, type, displayName, assetType
-        const items: MediaAsset[] = (data.objects || []).map((obj: Record<string, unknown>) => ({
+        const items: MediaAsset[] = (data.files || data.objects || []).map((obj: Record<string, unknown>) => ({
           key: obj.key as string,
           name: obj.name as string,
           displayName: (obj.displayName as string) || (obj.name as string),

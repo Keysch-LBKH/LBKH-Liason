@@ -77,13 +77,32 @@ const TOPIC_COLORS = [
 function deriveTopics(questions: EventQuestion[]): Topic[] {
   const topicMap: Record<string, number> = {};
   questions.forEach(q => {
-    const t = q.topic || 'General';
+    const t = q.topic || 'Uncategorized';
     topicMap[t] = (topicMap[t] || 0) + 1;
   });
-  return Object.entries(topicMap)
+  // Only surface topics with 2+ questions; the rest go into "Other"
+  const qualified: Array<[string, number]> = [];
+  let otherCount = 0;
+  Object.entries(topicMap)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([name, count], i) => ({ name, count, color: TOPIC_COLORS[i % TOPIC_COLORS.length] }));
+    .forEach(([name, count]) => {
+      if (count >= 2) {
+        qualified.push([name, count]);
+      } else {
+        otherCount += count;
+      }
+    });
+  // Cap at 7 named topics so there's room for Other
+  const capped = qualified.slice(0, 7);
+  const result: Topic[] = capped.map(([name, count], i) => ({
+    name,
+    count,
+    color: TOPIC_COLORS[i % TOPIC_COLORS.length],
+  }));
+  if (otherCount > 0) {
+    result.push({ name: 'Other', count: otherCount, color: '#6b7280' });
+  }
+  return result;
 }
 
 export function LiveEvent({ branding }: LiveEventProps) {
