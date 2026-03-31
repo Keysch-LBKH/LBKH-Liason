@@ -15,24 +15,32 @@
  */
 
 import { GoogleGenAI } from "@google/genai";
-import { fetchAllDocumentTexts } from "./r2Service";
+import { fetchAllDocumentTexts, fetchSoulDoc } from "./r2Service";
 
 // ── Document cache (refreshed on first chat of each session) ─────────────────
 let _sourceDocs: { name: string; text: string; publicUrl: string }[] | null = null;
 let _benchmarkDocs: { name: string; text: string; publicUrl: string }[] | null = null;
+let _soulDoc: string | null = null;  // Soul.md persona definition
 let _docsLoadingPromise: Promise<void> | null = null;
+
+/** Force-reload Soul.md from R2 (called after upload/delete in Settings) */
+export function invalidateSoulDoc(): void {
+  _soulDoc = null;
+}
 
 function loadDocs(force = false): Promise<void> {
   if ((_sourceDocs !== null && _benchmarkDocs !== null) && !force) return Promise.resolve();
   if (_docsLoadingPromise && !force) return _docsLoadingPromise;
   _docsLoadingPromise = (async () => {
     try {
-      const [sources, benchmarks] = await Promise.all([
+      const [sources, benchmarks, soul] = await Promise.all([
         fetchAllDocumentTexts('sources'),
         fetchAllDocumentTexts('benchmarks'),
+        fetchSoulDoc(),
       ]);
       _sourceDocs = sources;
       _benchmarkDocs = benchmarks;
+      _soulDoc = soul;
     } catch {
       _sourceDocs = _sourceDocs ?? [];
       _benchmarkDocs = _benchmarkDocs ?? [];
@@ -58,7 +66,18 @@ function buildSystemInstruction(benchmarkMode: boolean): string {
   const sourceBlock = buildDocBlock(sourceDocs, 'source');
   const benchmarkBlock = buildDocBlock(benchmarkDocs, 'benchmark');
 
-  return `
+  const soulLayer = _soulDoc ? `
+// ═══════════════════════════════════════════════════════════════════════════
+// LAYER 0 — SOUL DOCUMENT (Agent Persona & Voice)
+// This is the highest-priority identity layer. It defines who you ARE before
+// any other instruction. All responses MUST reflect this persona consistently.
+// ═══════════════════════════════════════════════════════════════════════════
+
+${_soulDoc}
+
+` : '';
+
+  return `${soulLayer}
 // ═══════════════════════════════════════════════════════════════════════════
 // LAYER 1 — CORE IDENTITY
 // ═══════════════════════════════════════════════════════════════════════════
@@ -157,9 +176,9 @@ ${benchmarkBlock}` : ''}
 function buildWidgetInstruction(): string {
   const sourceDocs = _sourceDocs ?? [];
   const sourceBlock = buildDocBlock(sourceDocs, 'source');
+  const soulLayer = _soulDoc ? `SOUL DOCUMENT — PERSONA & VOICE (highest priority — apply to all responses):\n\n${_soulDoc}\n\n` : '';
 
-  return `
-You are a Project Information Assistant — a friendly, helpful, and accurate AI that answers questions about this project using verified project documents.
+  return `${soulLayer}You are a Project Information Assistant — a friendly, helpful, and accurate AI that answers questions about this project using verified project documents.
 
 You are NOT a general-purpose chatbot. You only answer questions that can be addressed from the provided source documents. You do not speculate, invent facts, or discuss topics outside the project.
 

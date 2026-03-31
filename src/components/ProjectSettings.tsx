@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Upload, Link as LinkIcon, FileText, BarChart3, Palette, Globe, Eye, EyeOff, Save, Plus, Trash2, CheckCircle2, Search, Scissors, FlaskConical, ChevronRight, X, Lock, Unlock, Download, Radio, Layout, Zap, MessageCircle, ChevronDown, Palette as PaletteIcon, RotateCcw, Image, FileAudio, Video, Layers, Loader2, AlertTriangle, ExternalLink, Sun, Moon } from 'lucide-react';
+import { Shield, Upload, Link as LinkIcon, FileText, BarChart3, Palette, Globe, Eye, EyeOff, Save, Plus, Trash2, CheckCircle2, Search, Scissors, FlaskConical, ChevronRight, X, Lock, Unlock, Download, Radio, Layout, Zap, MessageCircle, ChevronDown, Palette as PaletteIcon, RotateCcw, Image, FileAudio, Video, Layers, Loader2, AlertTriangle, ExternalLink, Sun, Moon, Info, Copy, Check, Heart } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Footer } from './Footer';
-import { uploadDocument, listDocuments, deleteDocument } from '../services/r2Service';
-import { liaisonService } from '../services/liaisonService';
+import { uploadDocument, listDocuments, deleteDocument, uploadSoulDoc, fetchSoulDoc, deleteSoulDoc } from '../services/r2Service';
+import { liaisonService, invalidateSoulDoc } from '../services/liaisonService';
 import { DocumentViewer } from './DocumentViewer';
 import { useTheme } from './ThemeContext';
 
@@ -150,6 +150,14 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   const [sourcesError, setSourcesError] = useState<string | null>(null);
   const sourceFileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- Soul.md ---
+  const [soulDocName, setSoulDocName] = useState<string | null>(null);
+  const [soulLoading, setSoulLoading] = useState(false);
+  const [soulError, setSoulError] = useState<string | null>(null);
+  const [showSoulInfo, setShowSoulInfo] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
+  const soulFileInputRef = useRef<HTMLInputElement>(null);
+
   // --- Benchmark Sources (oppositional/comparison project docs) ---
   const [benchmarkFiles, setBenchmarkFiles] = useState<SourceFile[]>([]);
   const [benchmarksLoading, setBenchmarksLoading] = useState(false);
@@ -181,7 +189,42 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
       .then((docs) => { setBenchmarkFiles(mapDocs(docs)); setBenchmarksError(null); })
       .catch((err) => setBenchmarksError(err.message))
       .finally(() => setBenchmarksLoading(false));
+
+    // Load Soul.md name from R2
+    fetchSoulDoc().then((text) => {
+      if (text) setSoulDocName('Soul.md');
+    }).catch(() => {});
   }, []);
+
+  const handleSoulUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSoulLoading(true);
+    setSoulError(null);
+    try {
+      await uploadSoulDoc(file);
+      setSoulDocName(file.name);
+      invalidateSoulDoc();
+    } catch (err: any) {
+      setSoulError(err.message);
+    } finally {
+      setSoulLoading(false);
+      if (soulFileInputRef.current) soulFileInputRef.current.value = '';
+    }
+  };
+
+  const handleSoulDelete = async () => {
+    setSoulLoading(true);
+    try {
+      await deleteSoulDoc();
+      setSoulDocName(null);
+      invalidateSoulDoc();
+    } catch (err: any) {
+      setSoulError(err.message);
+    } finally {
+      setSoulLoading(false);
+    }
+  };
 
   const handleSourceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -249,25 +292,57 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
   const handleResetDemo = async () => {
     setResetting(true);
     try {
-      // Delete all source and benchmark documents from R2
-      for (const file of sources) await deleteDocument(file.id);
-      for (const file of benchmarkFiles) await deleteDocument(file.id);
-      setSources([]);
-      setBenchmarkFiles([]);
-      setSelectedFile(null);
-      setSelectedBenchmarkFile(null);
-
-      // Clear live event question queue and contacts log
       const workerUrl = import.meta.env.VITE_R2_WORKER_URL as string;
       const uploadSecret = import.meta.env.VITE_R2_UPLOAD_SECRET as string;
+      const bucket = import.meta.env.VITE_R2_BUCKET as string;
       const eventId = import.meta.env.VITE_EVENT_ID || 'lbkh';
-      const headers = { 'X-Upload-Secret': uploadSecret };
+      const authHeaders = { 'X-Upload-Secret': uploadSecret, 'X-Bucket': bucket };
+
+      // ── 1. Delete all source documents ──────────────────────────────────────
+      for (const file of sources) await deleteDocument(file.id);
+      setSources([]);
+      setSelectedFile(null);
+
+      // ── 2. Delete all benchmark documents ───────────────────────────────────
+      for (const file of benchmarkFiles) await deleteDocument(file.id);
+      setBenchmarkFiles([]);
+      setSelectedBenchmarkFile(null);
+
+      // ── 3. Delete all media / visual assets ─────────────────────────────────
+      const mediaRes = await fetch(`${workerUrl}/list`, { headers: authHeaders });
+      if (mediaRes.ok) {
+        const mediaData = await mediaRes.json();
+        const mediaFiles: { key: string }[] = (mediaData.files || []).filter(
+          (f: { key: string }) => f.key.startsWith('media/')
+        );
+        await Promise.allSettled(
+          mediaFiles.map((f) =>
+            fetch(`${workerUrl}/delete?key=${encodeURIComponent(f.key)}`, {
+              method: 'DELETE',
+              headers: authHeaders,
+            })
+          )
+        );
+        setVisualAssets([]);
+      }
+
+      // ── 4. Delete Soul.md ────────────────────────────────────────────────────
+      await deleteSoulDoc();
+      setSoulDocName(null);
+      invalidateSoulDoc();
+
+      // ── 5. Clear live event question queue, contacts log, and QA history ────
       await Promise.allSettled([
-        fetch(`${workerUrl}/event/clear?eventId=${eventId}`, { method: 'DELETE', headers }),
-        fetch(`${workerUrl}/event/contacts/clear?eventId=${eventId}`, { method: 'DELETE', headers }),
+        fetch(`${workerUrl}/event/clear?eventId=${eventId}`, { method: 'DELETE', headers: { 'X-Upload-Secret': uploadSecret } }),
+        fetch(`${workerUrl}/event/contacts/clear?eventId=${eventId}`, { method: 'DELETE', headers: { 'X-Upload-Secret': uploadSecret } }),
+        // Clear QA log (answered questions history)
+        fetch(`${workerUrl}/delete?key=${encodeURIComponent(`qa-log/${eventId}/entries.json`)}`, {
+          method: 'DELETE',
+          headers: authHeaders,
+        }),
       ]);
 
-      // Invalidate AI mind map cache so it rebuilds on next live session
+      // ── 6. Invalidate AI caches ──────────────────────────────────────────────
       liaisonService.invalidateMindMap();
 
       setIsLive(false);
@@ -660,6 +735,76 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                         </p>
                       </div>
                     </div>
+                  </div>
+
+                  {/* ── Soul.md Card ─────────────────────────────────────────────── */}
+                  <div className="relative rounded-2xl border border-violet-500/30 bg-violet-500/5 p-6 space-y-4">
+                    {/* Header row */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-violet-500/20">
+                          <Heart className="w-5 h-5 text-violet-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black uppercase tracking-widest text-violet-300">Soul Document</h3>
+                          <p className="text-[10px] text-white/40 mt-0.5">Agent Persona &amp; Voice — Layer 0</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowSoulInfo(true)}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-violet-500/20 text-white/40 hover:text-violet-300 transition-all"
+                        title="What is a Soul Document?"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Status / upload area */}
+                    <div className="flex items-center gap-4">
+                      {soulDocName ? (
+                        <div className="flex-1 flex items-center gap-3 bg-violet-500/10 border border-violet-500/30 rounded-xl px-4 py-3">
+                          <Heart className="w-4 h-4 text-violet-400 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-violet-300 truncate">{soulDocName}</p>
+                            <p className="text-[10px] text-white/30 uppercase tracking-widest">Active — injected as Layer 0 in all AI responses</p>
+                          </div>
+                          <button
+                            onClick={handleSoulDelete}
+                            disabled={soulLoading}
+                            className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all disabled:opacity-50"
+                            title="Remove Soul Document"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex items-center gap-3 bg-white/3 border border-dashed border-white/15 rounded-xl px-4 py-3">
+                          <div className="flex-1">
+                            <p className="text-[11px] text-white/30">No Soul Document uploaded — the AI will use its default persona.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <input
+                        ref={soulFileInputRef}
+                        type="file"
+                        accept=".md,.txt"
+                        className="hidden"
+                        onChange={handleSoulUpload}
+                      />
+                      <button
+                        onClick={() => soulFileInputRef.current?.click()}
+                        disabled={soulLoading}
+                        className="flex items-center gap-2 bg-violet-500/10 border border-violet-500/30 hover:bg-violet-500/20 hover:border-violet-400/50 text-violet-300 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 shrink-0"
+                      >
+                        {soulLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        {soulDocName ? 'Replace' : 'Upload Soul.md'}
+                      </button>
+                    </div>
+
+                    {soulError && (
+                      <p className="text-[10px] text-red-400 font-mono">{soulError}</p>
+                    )}
                   </div>
                 </div>
               )}

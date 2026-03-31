@@ -159,6 +159,65 @@ export async function updateDocumentMetadata(key: string, publicUrl: string): Pr
   }
 }
 
+// ── Soul.md — upload, fetch, delete ─────────────────────────────────────────
+
+export async function uploadSoulDoc(file: File): Promise<void> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('folder', 'soul');
+
+  const response = await fetch(`${WORKER_URL}/upload`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(`Soul upload failed: ${err.error || response.statusText}`);
+  }
+}
+
+export async function fetchSoulDoc(): Promise<string | null> {
+  // List files under soul/ prefix
+  const response = await fetch(`${WORKER_URL}/list?prefix=soul/`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  if (!response.ok) return null;
+  const data = await response.json();
+  const files: { key: string }[] = data.files || [];
+  if (!files.length) return null;
+
+  // Fetch the first (and only) soul doc
+  const key = files[0].key;
+  const fileRes = await fetch(`${WORKER_URL}/file?key=${encodeURIComponent(key)}`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  if (!fileRes.ok) return null;
+  const content = await fileRes.json() as { content: string; encoding: string };
+  if (content.encoding === 'utf8') return content.content;
+  // If base64, decode it
+  try { return atob(content.content); } catch { return null; }
+}
+
+export async function deleteSoulDoc(): Promise<void> {
+  const response = await fetch(`${WORKER_URL}/list?prefix=soul/`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  if (!response.ok) return;
+  const data = await response.json();
+  const files: { key: string }[] = data.files || [];
+  for (const f of files) {
+    await fetch(`${WORKER_URL}/delete?key=${encodeURIComponent(f.key)}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+  }
+}
+
 // ── Delete ────────────────────────────────────────────────────────────────────
 
 export async function deleteDocument(key: string): Promise<void> {
