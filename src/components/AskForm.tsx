@@ -3,7 +3,7 @@ import { Shield, Send, CheckCircle2, AlertCircle, Loader2, MessageSquare, Play, 
 import { Link, useSearchParams } from 'react-router-dom';
 
 const QUIZ_URL = 'https://corporate.lbkh.solutions/quiz';
-const VIDEO_ID = 'M-GRWRxEEpw';
+const VIDEO_ID = 'g7l-EVG6S4Q';
 
 interface Branding {
   logo: string;
@@ -285,29 +285,29 @@ export function AskForm({ branding }: AskFormProps) {
           onClick={() => setVideoOpen(false)}
         >
           <div
-            className="relative w-full max-w-4xl rounded-2xl overflow-hidden"
-            style={{ boxShadow: `0 0 80px ${branding.primaryColor}40` }}
+            className="relative rounded-2xl overflow-hidden flex flex-col"
+            style={{ width: '100%', maxWidth: '400px', boxShadow: `0 0 80px ${branding.primaryColor}40` }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
             <div
-              className="flex items-center justify-between px-5 py-3"
+              className="flex items-center justify-between px-4 py-2.5 shrink-0"
               style={{ background: `linear-gradient(135deg, ${branding.primaryColor}22, ${branding.secondaryColor}11)`, borderBottom: `1px solid ${branding.primaryColor}30` }}
             >
               <div className="flex items-center gap-2">
-                <Play className="w-3.5 h-3.5" style={{ color: branding.primaryColor }} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/70">LBKH Liaison — Overview</span>
+                <Play className="w-3 h-3" style={{ color: branding.primaryColor }} />
+                <span className="text-[9px] font-black uppercase tracking-widest text-white/70">LBKH Liaison — 90 sec</span>
               </div>
               <button
                 onClick={() => setVideoOpen(false)}
                 className="text-white/40 hover:text-white transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* YouTube embed */}
-            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+            {/* YouTube embed — 9:16 portrait */}
+            <div className="relative w-full" style={{ paddingBottom: '177.78%' }}>
               <iframe
                 className="absolute inset-0 w-full h-full"
                 src={`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&rel=0&modestbranding=1`}
@@ -319,15 +319,15 @@ export function AskForm({ branding }: AskFormProps) {
 
             {/* Post-video CTA */}
             <div
-              className="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4"
+              className="px-4 py-3 flex flex-col items-center gap-2 shrink-0"
               style={{ background: '#050505', borderTop: `1px solid ${branding.primaryColor}20` }}
             >
-              <p className="text-[11px] text-white/50 uppercase tracking-widest">Ready to see if Liaison fits your project?</p>
+              <p className="text-[9px] text-white/40 uppercase tracking-widest text-center">Ready to see if Liaison fits your project?</p>
               <a
                 href={QUIZ_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                 style={{
                   background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
                   color: '#000',
@@ -335,7 +335,7 @@ export function AskForm({ branding }: AskFormProps) {
                 }}
               >
                 Take the Fit Quiz
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3 h-3" />
               </a>
             </div>
           </div>
