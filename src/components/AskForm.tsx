@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Send, CheckCircle2, AlertCircle, Loader2, MessageSquare } from 'lucide-react';
+import { Shield, Send, CheckCircle2, AlertCircle, Loader2, MessageSquare, Play, X, ArrowRight } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+
+const QUIZ_URL = 'https://corporate.lbkh.solutions/quiz';
+const VIDEO_ID = 'M-GRWRxEEpw';
 
 interface Branding {
   logo: string;
@@ -18,6 +21,7 @@ const WORKER_URL = import.meta.env.VITE_R2_WORKER_URL || 'https://lbkh-r2-proxy.
 export function AskForm({ branding }: AskFormProps) {
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get('event') || import.meta.env.VITE_EVENT_ID || 'lbkh';
+  const [videoOpen, setVideoOpen] = useState(false);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -71,7 +75,7 @@ export function AskForm({ branding }: AskFormProps) {
       style={{ backgroundColor: '#050505' }}
     >
       {/* Brand header */}
-      <div className="mb-8 text-center space-y-3">
+      <div className="mb-6 text-center space-y-3">
         <Link to="/" className="inline-flex items-center gap-3 group">
           {branding.logo ? (
             <img src={branding.logo} alt="Logo" className="w-10 h-10 object-contain" />
@@ -93,6 +97,35 @@ export function AskForm({ branding }: AskFormProps) {
         <p className="text-[10px] font-mono uppercase tracking-[0.3em]" style={{ color: `${branding.primaryColor}80` }}>
           Community Liaison · Public Q&amp;A
         </p>
+
+        {/* Video + Quiz strip */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <button
+            onClick={() => setVideoOpen(true)}
+            className="group flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+            style={{
+              background: `linear-gradient(135deg, ${branding.primaryColor}22, ${branding.secondaryColor}11)`,
+              border: `1px solid ${branding.primaryColor}40`,
+              boxShadow: `0 0 20px ${branding.primaryColor}20`,
+            }}
+          >
+            <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center">
+              <Play className="w-2.5 h-2.5 fill-current" style={{ color: branding.primaryColor }} />
+            </div>
+            <span style={{ color: branding.primaryColor }}>Watch the Video</span>
+          </button>
+
+          <a
+            href={QUIZ_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest transition-all"
+            style={{ color: `${branding.primaryColor}60` }}
+          >
+            <span className="group-hover:text-white transition-colors" style={{ color: 'inherit' }}>Is Liaison a fit?</span>
+            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+          </a>
+        </div>
       </div>
 
       {/* Card */}
@@ -243,6 +276,71 @@ export function AskForm({ branding }: AskFormProps) {
       <p className="mt-6 text-[9px] text-white/15 uppercase tracking-widest text-center">
         Powered by LBKH Liaison · Source-Locked Community AI
       </p>
+
+      {/* Video Modal */}
+      {videoOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+          style={{ backgroundColor: 'rgba(0,0,0,0.92)' }}
+          onClick={() => setVideoOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl rounded-2xl overflow-hidden"
+            style={{ boxShadow: `0 0 80px ${branding.primaryColor}40` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div
+              className="flex items-center justify-between px-5 py-3"
+              style={{ background: `linear-gradient(135deg, ${branding.primaryColor}22, ${branding.secondaryColor}11)`, borderBottom: `1px solid ${branding.primaryColor}30` }}
+            >
+              <div className="flex items-center gap-2">
+                <Play className="w-3.5 h-3.5" style={{ color: branding.primaryColor }} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/70">LBKH Liaison — Overview</span>
+              </div>
+              <button
+                onClick={() => setVideoOpen(false)}
+                className="text-white/40 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* YouTube embed */}
+            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src={`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&rel=0&modestbranding=1`}
+                title="LBKH Liaison Overview"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+
+            {/* Post-video CTA */}
+            <div
+              className="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4"
+              style={{ background: '#050505', borderTop: `1px solid ${branding.primaryColor}20` }}
+            >
+              <p className="text-[11px] text-white/50 uppercase tracking-widest">Ready to see if Liaison fits your project?</p>
+              <a
+                href={QUIZ_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
+                style={{
+                  background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
+                  color: '#000',
+                  boxShadow: `0 0 20px ${branding.primaryColor}40`,
+                }}
+              >
+                Take the Fit Quiz
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
