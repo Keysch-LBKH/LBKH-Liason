@@ -3,7 +3,8 @@ import {
   Shield, TrendingUp, Users, Radio, Activity, CheckCircle2,
   Layout, MessageCircle, ChevronDown, Zap, X, CheckSquare,
   Square, Layers, Loader2, AlertCircle, RefreshCw,
-  Maximize2, Copy, Check, Mail, UserCheck, Download
+  Maximize2, Copy, Check, Mail, UserCheck, Download,
+  FileText, Mic, Hash, Flag, ExternalLink
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
@@ -779,47 +780,162 @@ export function LiveEvent({ branding }: LiveEventProps) {
                 </button>
               </div>
 
-              {/* Generated answer (pending approval) */}
+              {/* Executive Briefing Panel (pending approval) */}
               <AnimatePresence>
                 {generatedAnswer && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="rounded-xl border p-4 space-y-4"
-                    style={{ borderColor: `${branding.secondaryColor}40`, backgroundColor: `${branding.secondaryColor}08` }}
+                    className="rounded-xl border overflow-hidden"
+                    style={{ borderColor: `${branding.secondaryColor}40` }}
                   >
-                    <div className="flex items-center gap-2" style={{ color: branding.secondaryColor }}>
-                      <Activity className="w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Generated Answer — Pending Approval</span>
+                    {/* Briefing header bar */}
+                    <div
+                      className="flex items-center justify-between px-4 py-2.5"
+                      style={{ backgroundColor: `${branding.secondaryColor}18`, borderBottom: `1px solid ${branding.secondaryColor}30` }}
+                    >
+                      <div className="flex items-center gap-2" style={{ color: branding.secondaryColor }}>
+                        <FileText className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Executive Briefing — Pending Approval</span>
+                      </div>
+                      <span className="text-[8px] font-mono text-white/30 uppercase tracking-widest">Board Eyes Only</span>
                     </div>
-                    <p className="text-sm text-white/80 leading-relaxed">{generatedAnswer}</p>
 
-                    {/* Citation chips */}
-                    {pendingCitations.length > 0 && (
-                      <div className="space-y-1.5">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-white/30">Sources</p>
-                        <div className="flex flex-wrap gap-2">
-                          {pendingCitations.map((cit, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setSelectedCitation(cit)}
-                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono transition-all hover:scale-105"
-                              style={{
-                                borderColor: `${branding.primaryColor}50`,
-                                backgroundColor: `${branding.primaryColor}10`,
-                                color: branding.primaryColor,
-                              }}
+                    {/* Briefing body — parse and render sections */}
+                    <div className="p-4 space-y-4" style={{ backgroundColor: `${branding.secondaryColor}06` }}>
+                      {(() => {
+                        // Parse the structured briefing into labelled sections
+                        const sections: { label: string; icon: React.ReactNode; content: string; accent: string }[] = [];
+                        const sectionDefs = [
+                          { key: 'HEADLINE ANSWER', icon: <Hash className="w-3.5 h-3.5" />, accent: branding.primaryColor },
+                          { key: 'TALKING POINTS', icon: <Activity className="w-3.5 h-3.5" />, accent: branding.secondaryColor },
+                          { key: 'KEY NUMBERS', icon: <TrendingUp className="w-3.5 h-3.5" />, accent: '#f59e0b' },
+                          { key: 'SUGGESTED VERBAL RESPONSE', icon: <Mic className="w-3.5 h-3.5" />, accent: '#10b981' },
+                          { key: 'SOURCES', icon: <Shield className="w-3.5 h-3.5" />, accent: branding.primaryColor },
+                          { key: 'FLAG FOR FOLLOW-UP', icon: <Flag className="w-3.5 h-3.5" />, accent: '#ef4444' },
+                        ];
+                        // Split raw text by **SECTION** markers
+                        const raw = generatedAnswer;
+                        const parts = raw.split(/\*\*([A-Z][A-Z \-]+)\*\*/);
+                        // parts[0] = preamble (usually empty), then alternating [sectionName, content, sectionName, content...]
+                        for (let i = 1; i < parts.length; i += 2) {
+                          const label = parts[i]?.trim();
+                          const content = parts[i + 1]?.trim() || '';
+                          if (!label || !content) continue;
+                          const def = sectionDefs.find(d => label.toUpperCase().includes(d.key));
+                          sections.push({
+                            label,
+                            icon: def?.icon ?? <FileText className="w-3.5 h-3.5" />,
+                            content,
+                            accent: def?.accent ?? branding.primaryColor,
+                          });
+                        }
+                        // Fallback: if no sections parsed, show raw text
+                        if (sections.length === 0) {
+                          return <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{raw}</p>;
+                        }
+                        return sections.map((sec, si) => (
+                          <div key={si} className="space-y-1.5">
+                            {/* Section label */}
+                            <div className="flex items-center gap-1.5" style={{ color: sec.accent }}>
+                              {sec.icon}
+                              <span className="text-[9px] font-black uppercase tracking-widest">{sec.label}</span>
+                            </div>
+                            {/* Section content */}
+                            <div
+                              className="rounded-lg px-3 py-2.5"
+                              style={{ backgroundColor: `${sec.accent}0d`, borderLeft: `2px solid ${sec.accent}60` }}
                             >
-                              <Shield className="w-3 h-3" />
-                              {cit.docName.replace(/\.[^.]+$/, '').slice(0, 30)}
-                            </button>
-                          ))}
-                        </div>
+                              {sec.label.toUpperCase().includes('SOURCES') ? (
+                                // Sources section: render each line as a clickable notation
+                                <div className="space-y-2">
+                                  {sec.content.split('\n').filter(l => l.trim()).map((line, li) => {
+                                    // Match lines like: ¹ "snippet" — DocName [url?]
+                                    const srcMatch = line.match(/^([¹²³⁴⁵⁶⁷⁸⁹\d]+)\s+(.+?)\s+—\s+(.+?)(?:\s+\[(.+?)\])?$/);
+                                    if (srcMatch) {
+                                      const [, num, snippet, docName, url] = srcMatch;
+                                      const citObj = pendingCitations.find(c =>
+                                        c.docName.toLowerCase().includes(docName.trim().toLowerCase().replace(/\.[^.]+$/, ''))
+                                      ) || { docName: docName.trim(), snippet: snippet.replace(/^"|"$/g, ''), publicUrl: url || '' };
+                                      return (
+                                        <button
+                                          key={li}
+                                          onClick={() => setSelectedCitation(citObj)}
+                                          className="w-full flex items-start gap-2 text-left rounded-lg p-2 transition-all hover:bg-white/5 group"
+                                        >
+                                          <span
+                                            className="text-[10px] font-black shrink-0 w-4 text-center"
+                                            style={{ color: sec.accent }}
+                                          >{num}</span>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] text-white/60 italic leading-relaxed group-hover:text-white/80 transition-colors">
+                                              {snippet.replace(/^"|"$/g, '')}
+                                            </p>
+                                            <p className="text-[9px] font-mono mt-0.5" style={{ color: `${sec.accent}90` }}>
+                                              {docName.trim()}
+                                            </p>
+                                          </div>
+                                          {url && <ExternalLink className="w-3 h-3 shrink-0 text-white/20 group-hover:text-white/50 mt-0.5" />}
+                                        </button>
+                                      );
+                                    }
+                                    return <p key={li} className="text-[10px] text-white/60 leading-relaxed">{line}</p>;
+                                  })}
+                                </div>
+                              ) : sec.label.toUpperCase().includes('SUGGESTED VERBAL') ? (
+                                // Verbal response: styled as a quote the presenter reads
+                                <p className="text-sm text-white leading-relaxed font-medium italic">
+                                  &ldquo;{sec.content.replace(/^"|"$/g, '')}&rdquo;
+                                </p>
+                              ) : (
+                                // Talking points / headline / numbers: render bullets
+                                <div className="space-y-1">
+                                  {sec.content.split('\n').filter(l => l.trim()).map((line, li) => (
+                                    <p key={li} className="text-sm text-white/85 leading-relaxed">
+                                      {line.startsWith('•') || line.startsWith('-')
+                                        ? <span><span style={{ color: sec.accent }} className="mr-1.5">▸</span>{line.replace(/^[•\-]\s*/, '')}</span>
+                                        : line
+                                      }
+                                    </p>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+
+                    {/* Citation chips from structured citations */}
+                    {pendingCitations.length > 0 && (
+                      <div
+                        className="px-4 pb-3 flex flex-wrap gap-2"
+                        style={{ borderTop: `1px solid ${branding.primaryColor}15` }}
+                      >
+                        <p className="w-full text-[8px] font-black uppercase tracking-widest text-white/20 pt-3 pb-1">Verified Sources</p>
+                        {pendingCitations.map((cit, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setSelectedCitation(cit)}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-mono transition-all hover:scale-105"
+                            style={{
+                              borderColor: `${branding.primaryColor}50`,
+                              backgroundColor: `${branding.primaryColor}10`,
+                              color: branding.primaryColor,
+                            }}
+                          >
+                            <Shield className="w-3 h-3" />
+                            {cit.docName.replace(/\.[^.]+$/, '').slice(0, 28)}
+                          </button>
+                        ))}
                       </div>
                     )}
 
-                    <div className="flex gap-3">
+                    {/* Approve / Discard */}
+                    <div
+                      className="flex gap-3 px-4 pb-4"
+                    >
                       <button
                         onClick={handleApprove}
                         className="flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
