@@ -650,27 +650,15 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                       </div>
                     </div>
 
-                    {/* Document Viewer */}
+                    {/* Document Viewer placeholder — actual viewer opens as full-screen modal */}
                     <div className="xl:col-span-2 data-card border-white/10 flex flex-col p-0 overflow-hidden">
-                      {viewerOpen && selectedFile ? (
-                        <DocumentViewer
-                          docKey={selectedFile.id}
-                          docName={selectedFile.name}
-                          docType={selectedFile.type}
-                          initialPublicUrl={selectedFile.publicUrl}
-                          isRedacted={selectedFile.redacted}
-                          onClose={() => { setViewerOpen(false); setSelectedFile(null); }}
-                          onSaved={handleViewerSaved}
-                        />
-                      ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-white/20 gap-4 p-8">
-                          <FileText className="w-16 h-16 opacity-10" />
-                          <p className="text-xs font-black uppercase tracking-[0.2em] text-center">Select a document to open it</p>
-                          <p className="text-[10px] font-mono text-white/20 text-center max-w-xs leading-relaxed">
-                            Click any file on the left to view its contents, run AI PII scanning, apply redactions, and set a public filing link.
-                          </p>
-                        </div>
-                      )}
+                      <div className="flex-1 flex flex-col items-center justify-center text-white/20 gap-4 p-8">
+                        <FileText className="w-16 h-16 opacity-10" />
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-center">Select a document to open it</p>
+                        <p className="text-[10px] font-mono text-white/20 text-center max-w-xs leading-relaxed">
+                          Click any file on the left to open the full-screen viewer — run AI PII scanning, apply redactions, and set a public filing link.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1180,6 +1168,19 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Document Viewer Modal — top-level so it works from any tab ── */}
+      {viewerOpen && selectedFile && (
+        <DocumentViewer
+          docKey={selectedFile.id}
+          docName={selectedFile.name}
+          docType={selectedFile.type}
+          initialPublicUrl={selectedFile.publicUrl}
+          isRedacted={selectedFile.redacted}
+          onClose={() => { setViewerOpen(false); setSelectedFile(null); }}
+          onSaved={handleViewerSaved}
+        />
+      )}
 
       <Footer branding={branding} />
     </div>
