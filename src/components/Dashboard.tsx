@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { liaisonService } from '../services/liaisonService';
 import ReactMarkdown from 'react-markdown';
+import { CitedMarkdown, type Citation } from './CitedMarkdown';
 import { Send, Shield, Info, AlertTriangle, FileText, ChevronRight, Loader2, Mail, Clock, CheckCircle2, ExternalLink, Settings, Radio, Layout, MessageCircle, ChevronDown } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -34,6 +35,7 @@ interface Message {
   timestamp: Date;
   suggestions?: string[];
   showForm?: boolean;
+  citations?: Citation[];
 }
 
 export function Dashboard({ branding }: DashboardProps) {
@@ -110,15 +112,16 @@ export function Dashboard({ branding }: DashboardProps) {
         parts: [{ text: m.text }],
       }));
 
-      const responseText = await liaisonService.chat(messageText, history, benchmarkMode);
-      const { cleanText, suggestions, isInternalReview } = parseResponse(responseText || "");
+      const { answer: rawAnswer, citations } = await liaisonService.chatWithCitations(messageText, history, benchmarkMode);
+      const { cleanText, suggestions, isInternalReview } = parseResponse(rawAnswer || "");
       
       const modelMessage: Message = {
         role: 'model',
         text: cleanText || "I encountered an error processing your request.",
         timestamp: new Date(),
         suggestions: suggestions.length > 0 ? suggestions : undefined,
-        showForm: isInternalReview
+        showForm: isInternalReview,
+        citations: citations.length > 0 ? citations : undefined,
       };
 
       setMessages((prev) => [...prev, modelMessage]);
@@ -473,14 +476,19 @@ export function Dashboard({ branding }: DashboardProps) {
                     boxShadow: m.role === 'user' ? `0 0 30px ${branding.primaryColor}40` : undefined
                   }}
                 >
-                  <div className={cn(
-                    "prose prose-sm max-w-none prose-invert",
-                    m.role === 'user' ? "prose-p:text-white" : "prose-p:text-white/90"
-                  )}>
-                    <ReactMarkdown>
-                      {m.text}
-                    </ReactMarkdown>
-                  </div>
+                  {m.role === 'user' ? (
+                    <div className="prose prose-sm max-w-none prose-invert prose-p:text-white">
+                      <ReactMarkdown>{m.text}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <CitedMarkdown
+                      text={m.text}
+                      citations={m.citations ?? []}
+                      primary={branding.primaryColor}
+                      secondary={branding.secondaryColor}
+                      proseClass="prose-p:text-white/90"
+                    />
+                  )}
                   
                   {m.role === 'model' && m.suggestions && (
                     <div className="mt-6 pt-6 border-t border-white/10 space-y-3">

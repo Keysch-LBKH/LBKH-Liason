@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Upload, Link as LinkIcon, FileText, BarChart3, Palette, Globe, Eye, EyeOff, Save, Plus, Trash2, CheckCircle2, Search, Scissors, FlaskConical, ChevronRight, X, Lock, Unlock, Download, Radio, Layout, Zap, MessageCircle, ChevronDown, Palette as PaletteIcon, RotateCcw, Image, FileAudio, Video, Layers, Loader2 } from 'lucide-react';
+import { Shield, Upload, Link as LinkIcon, FileText, BarChart3, Palette, Globe, Eye, EyeOff, Save, Plus, Trash2, CheckCircle2, Search, Scissors, FlaskConical, ChevronRight, X, Lock, Unlock, Download, Radio, Layout, Zap, MessageCircle, ChevronDown, Palette as PaletteIcon, RotateCcw, Image, FileAudio, Video, Layers, Loader2, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Footer } from './Footer';
@@ -34,6 +34,8 @@ interface SourceFile {
 }
 
 export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: ProjectSettingsProps) {
+  const primaryColor = branding.primaryColor;
+  const secondaryColor = branding.secondaryColor;
   const [activeTab, setActiveTab] = useState<SiloTab>('sources');
   const [showSaved, setShowSaved] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -903,7 +905,75 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                 <div className="space-y-8 h-full flex flex-col">
                   <div>
                     <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Client Testing Lab</h2>
-                    <p className="text-sm text-white/40 mt-1 uppercase tracking-widest">Sandbox Environment for Liaison Verification</p>
+                    <p className="text-sm text-white/40 mt-1 uppercase tracking-widest">Sandbox Environment, Redaction & Widget Deployment</p>
+                  </div>
+
+                  {/* Redaction Center */}
+                  <div className="data-card border-white/10 bg-black/40 space-y-4 p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }} />
+                      <h3 className="text-[11px] font-black uppercase tracking-widest" style={{ color: primaryColor }}>Document Redaction Center</h3>
+                    </div>
+                    <p className="text-xs text-white/40 leading-relaxed">
+                      Review and redact source documents before going live. Use AI-powered PII detection or manually select words to redact. Redacted versions are saved back to R2 and served to the public — original files are never exposed.
+                    </p>
+
+                    {sources.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <Scissors className="w-8 h-8 text-white/10 mb-3" />
+                        <p className="text-xs text-white/30">No source documents uploaded yet. Upload documents in the Source Data silo first.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {sources.map((doc) => (
+                          <div
+                            key={doc.id}
+                            className="flex items-center gap-4 p-4 rounded-xl border transition-all group"
+                            style={{ borderColor: primaryColor + '20', backgroundColor: primaryColor + '06' }}
+                          >
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: primaryColor + '15' }}>
+                              <FileText className="w-4 h-4" style={{ color: primaryColor }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-white/80 truncate">{doc.name}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                {doc.redacted ? (
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1">
+                                    <CheckCircle2 className="w-2.5 h-2.5" /> Redacted
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-orange-400 flex items-center gap-1">
+                                    <AlertTriangle className="w-2.5 h-2.5" /> Not yet reviewed
+                                  </span>
+                                )}
+                                {doc.publicUrl && (
+                                  <a
+                                    href={doc.publicUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[9px] font-black uppercase tracking-widest flex items-center gap-1 hover:opacity-80 transition-opacity"
+                                    style={{ color: primaryColor }}
+                                  >
+                                    <ExternalLink className="w-2.5 h-2.5" /> Public Filing
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleOpenDocument(doc)}
+                              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shrink-0"
+                              style={{ backgroundColor: primaryColor + '20', color: primaryColor, border: `1px solid ${primaryColor}40` }}
+                            >
+                              <Scissors className="w-3 h-3" />
+                              {doc.redacted ? 'Re-Redact' : 'Open & Redact'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-[9px] text-white/20 leading-relaxed pt-2 border-t border-white/5">
+                      Tip: Click &ldquo;Open &amp; Redact&rdquo; to launch the document viewer. Toggle Redact Mode on, click individual words to mark them for redaction, or use the AI PII Scan to auto-detect sensitive information. Changes are staged until you click &ldquo;Save Redacted Version&rdquo;.
+                    </p>
                   </div>
 
                   {/* Sandbox launch */}
