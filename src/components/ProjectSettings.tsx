@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Upload, Link as LinkIcon, FileText, BarChart3, Palette, Globe, Eye, EyeOff, Save, Plus, Trash2, CheckCircle2, Search, Scissors, FlaskConical, ChevronRight, X, Lock, Unlock, Download, Radio, Layout, Zap, MessageCircle, ChevronDown, Palette as PaletteIcon, RotateCcw, Image, FileAudio, Video, Layers, Loader2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Shield, Upload, Link as LinkIcon, FileText, BarChart3, Palette, Globe, Eye, EyeOff, Save, Plus, Trash2, CheckCircle2, Search, Scissors, FlaskConical, ChevronRight, X, Lock, Unlock, Download, Radio, Layout, Zap, MessageCircle, ChevronDown, Palette as PaletteIcon, RotateCcw, Image, FileAudio, Video, Layers, Loader2, AlertTriangle, ExternalLink, Sun, Moon } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Footer } from './Footer';
 import { uploadDocument, listDocuments, deleteDocument } from '../services/r2Service';
 import { liaisonService } from '../services/liaisonService';
 import { DocumentViewer } from './DocumentViewer';
+import { useTheme } from './ThemeContext';
 
 interface Branding {
   logo: string;
@@ -31,6 +32,104 @@ interface SourceFile {
   status: 'ready' | 'processing' | 'redacted';
   publicUrl: string;
   redacted: boolean;
+}
+
+// ─── Branding Preview Widget ────────────────────────────────────────────────
+function BrandingPreviewWidget({ branding }: { branding: { logo: string; primaryColor: string; secondaryColor: string; companyName: string } }) {
+  const { theme, toggleTheme } = useTheme();
+
+  const PreviewCard = ({ bg, textPrimary, textSecondary, border, label }: {
+    bg: string; textPrimary: string; textSecondary: string; border: string; label: string;
+  }) => (
+    <div className="flex-1 rounded-2xl overflow-hidden border" style={{ borderColor: border }}>
+      {/* Mini header bar */}
+      <div className="px-4 py-2.5 flex items-center justify-between" style={{ backgroundColor: bg === '#ffffff' ? '#f0f0f0' : '#0a0a0a' }}>
+        <div className="flex items-center gap-2">
+          {branding.logo ? (
+            <img src={branding.logo} alt="logo" className="w-5 h-5 object-contain" />
+          ) : (
+            <div
+              className="w-5 h-5 rounded-sm flex items-center justify-center"
+              style={{ background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})` }}
+            >
+              <Shield className="w-3 h-3 text-white" />
+            </div>
+          )}
+          <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: textPrimary }}>
+            {branding.companyName || 'YOUR COMPANY'}
+          </span>
+        </div>
+        <span className="text-[7px] font-mono uppercase tracking-widest" style={{ color: branding.secondaryColor }}>Project Liaison</span>
+      </div>
+      {/* Body */}
+      <div className="p-4 space-y-3" style={{ backgroundColor: bg }}>
+        {/* Simulated chat bubble */}
+        <div className="rounded-xl p-3 text-[9px] leading-relaxed" style={{ backgroundColor: branding.primaryColor + '18', border: `1px solid ${branding.primaryColor}30`, color: textPrimary }}>
+          What are the key community benefits of this project?
+        </div>
+        <div className="rounded-xl p-3 text-[9px] leading-relaxed" style={{ backgroundColor: bg === '#ffffff' ? '#f5f5f5' : '#1a1a1a', border: `1px solid ${border}`, color: textSecondary }}>
+          Based on the project documents, the key benefits include improved transit access and reduced commute times.
+          <span className="ml-1 text-[8px] font-black cursor-pointer" style={{ color: branding.primaryColor }}>[1]</span>
+        </div>
+        {/* Color swatches row */}
+        <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full ring-1 ring-white/20" style={{ backgroundColor: branding.primaryColor }} />
+            <span className="text-[7px] font-mono" style={{ color: textSecondary }}>Primary</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full ring-1 ring-white/20" style={{ backgroundColor: branding.secondaryColor }} />
+            <span className="text-[7px] font-mono" style={{ color: textSecondary }}>Secondary</span>
+          </div>
+          <div className="ml-auto text-[7px] font-mono uppercase tracking-widest" style={{ color: textSecondary }}>{label}</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/30 p-5 space-y-4">
+      {/* Header row with toggle */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <PaletteIcon className="w-4 h-4" style={{ color: branding.primaryColor }} />
+          <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: branding.primaryColor }}>Live Branding Preview</span>
+        </div>
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all hover:scale-105"
+          style={{
+            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
+            borderColor: theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.15)',
+            color: theme === 'dark' ? '#fff' : '#111',
+          }}
+        >
+          {theme === 'dark' ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
+          {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+        </button>
+      </div>
+      <p className="text-[9px] text-white/30 uppercase tracking-widest">
+        How your branding appears on dark and light backgrounds — adjust colors above to update in real time.
+      </p>
+      {/* Side-by-side preview cards */}
+      <div className="flex gap-3">
+        <PreviewCard
+          bg="#0d0d0d"
+          textPrimary="#ffffff"
+          textSecondary="rgba(255,255,255,0.45)"
+          border="rgba(255,255,255,0.08)"
+          label="Dark"
+        />
+        <PreviewCard
+          bg="#ffffff"
+          textPrimary="#111111"
+          textSecondary="rgba(0,0,0,0.45)"
+          border="rgba(0,0,0,0.10)"
+          label="Light"
+        />
+      </div>
+    </div>
+  );
 }
 
 export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: ProjectSettingsProps) {
@@ -880,24 +979,7 @@ export function ProjectSettings({ isLive, setIsLive, branding, setBranding }: Pr
                   </div>
                 </div>
 
-                <div className="p-6 bg-teal-500/10 border border-teal-400/30 rounded-2xl space-y-4">
-                  <div className="flex items-center gap-3 text-teal-300">
-                    <PaletteIcon className="w-5 h-5" />
-                    <h3 className="text-xs font-black uppercase tracking-widest">Branding Preview</h3>
-                  </div>
-                  <div className="flex items-center gap-4 p-4 bg-black/40 rounded-xl border border-white/5">
-                    <div 
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-black"
-                      style={{ background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})` }}
-                    >
-                      {branding.companyName.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-white uppercase tracking-tighter">{branding.companyName}</p>
-                      <p className="text-[9px] text-white/40 uppercase tracking-widest">Project Liaison</p>
-                    </div>
-                  </div>
-                </div>
+                <BrandingPreviewWidget branding={branding} />
               </div>
             )}
 
