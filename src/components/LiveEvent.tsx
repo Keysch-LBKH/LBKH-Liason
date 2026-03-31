@@ -571,12 +571,22 @@ export function LiveEvent({ branding }: LiveEventProps) {
             {questions.map((q) => {
               const isSelected = selectedIds.has(q.id);
               const isQueued = q.status === 'queued';
+              // Look up the topic color from the current topics list; fall back to a neutral grey
+              const topicColor = q.topic
+                ? (topics.find(t => t.name === q.topic)?.color ?? '#6b7280')
+                : '#6b7280';
               return (
                 <div
                   key={q.id}
                   onClick={() => isQueued && toggleSelect(q.id)}
-                  className={`p-3 space-y-2 transition-colors ${isQueued ? 'cursor-pointer hover:bg-white/5' : ''} ${isSelected ? 'bg-white/5' : ''}`}
-                  style={isSelected ? { borderLeft: `2px solid ${branding.primaryColor}` } : {}}
+                  className={`relative p-3 pl-4 space-y-2 transition-colors ${
+                    isQueued ? 'cursor-pointer hover:bg-white/5' : ''
+                  } ${isSelected ? 'bg-white/5' : ''}`}
+                  style={{
+                    // Colored left border: thicker + brighter when selected, subtle when not
+                    borderLeft: `3px solid ${topicColor}${isSelected ? 'ff' : '60'}`,
+                    backgroundColor: isSelected ? `${topicColor}12` : undefined,
+                  }}
                 >
                   <div className="flex items-start gap-2">
                     {/* Checkbox */}
@@ -590,14 +600,15 @@ export function LiveEvent({ branding }: LiveEventProps) {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
+                      {/* Name + status row */}
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-semibold text-white/50">
-                      {q.displayName ? (
-                        <span style={{ color: `${branding.primaryColor}` }}>{q.displayName}</span>
-                      ) : (
-                        'Anonymous'
-                      )}
-                    </span>
+                          {q.displayName ? (
+                            <span style={{ color: branding.primaryColor }}>{q.displayName}</span>
+                          ) : (
+                            'Anonymous'
+                          )}
+                        </span>
                         <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
                           q.status === 'answered' ? 'bg-emerald-500/20 text-emerald-400' :
                           q.status === 'processing' ? 'bg-teal-400/20 text-teal-300 animate-pulse' :
@@ -606,7 +617,27 @@ export function LiveEvent({ branding }: LiveEventProps) {
                           {q.status}
                         </span>
                       </div>
+                      {/* Question text */}
                       <p className="text-sm text-white leading-relaxed font-medium">{q.text}</p>
+                      {/* Topic pill */}
+                      {q.topic && (
+                        <div className="mt-1.5">
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest"
+                            style={{
+                              backgroundColor: `${topicColor}22`,
+                              color: topicColor,
+                              border: `1px solid ${topicColor}50`,
+                            }}
+                          >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: topicColor }}
+                            />
+                            {q.topic}
+                          </span>
+                        </div>
+                      )}
                       {q.answer && (
                         <div
                           className="mt-2 p-2 border-l-2 rounded-sm"
