@@ -144,9 +144,9 @@ interface CitedMarkdownProps {
 }
 
 /**
- * Renders answer text, replacing [SOURCE: ...] inline patterns with
- * numbered superscript links, and also rendering any structured citations
- * passed via the `citations` prop as a numbered reference list at the bottom.
+ * Renders answer text, replacing [SOURCE: ...] inline patterns OR [N] numbered
+ * markers with clickable superscript buttons. Structured citations passed via
+ * the `citations` prop are shown as a numbered reference list at the bottom.
  */
 export function CitedMarkdown({ text, citations, primary, secondary, proseClass = '' }: CitedMarkdownProps) {
   const [openCitation, setOpenCitation] = useState<{ citation: Citation; index: number; rect: DOMRect } | null>(null);
@@ -160,18 +160,56 @@ export function CitedMarkdown({ text, citations, primary, secondary, proseClass 
     []
   );
 
-  // Strip inline [SOURCE: ...] patterns from the text — structured citations are shown below
-  const cleanedText = text
+  // Strip any legacy inline [SOURCE: ...] patterns
+  const strippedText = text
     .replace(/\[SOURCE:\s*"[^"]*"\s*—\s*[^\]]+\]\([^)]*\)/g, '')
     .replace(/\[SOURCE:\s*"[^"]*"\s*—\s*[^\]]+\]/g, '')
     .trim();
 
+  // Split text on [N] markers so we can render them as superscript buttons
+  const parts = strippedText.split(/(\[\d+\])/g);
+
+  const renderWithCitations = () => {
+    if (citations.length === 0) {
+      return (
+        <div className={`prose prose-sm max-w-none prose-invert ${proseClass}`}>
+          <ReactMarkdown>{strippedText}</ReactMarkdown>
+        </div>
+      );
+    }
+    // Rebuild as segments: plain markdown text interleaved with superscript buttons
+    return (
+      <div className={`prose prose-sm max-w-none prose-invert ${proseClass}`}>
+        {parts.map((part, idx) => {
+          const match = part.match(/^\[(\d+)\]$/);
+          if (match) {
+            const citIdx = parseInt(match[1], 10) - 1;
+            const cit = citations[citIdx];
+            if (cit) {
+              return (
+                <button
+                  key={idx}
+                  onClick={(e) => handleCitationClick(e, cit, citIdx + 1)}
+                  className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-black align-super mx-0.5 cursor-pointer transition-opacity hover:opacity-70"
+                  style={{ backgroundColor: primary, color: '#000', verticalAlign: 'super', fontSize: '0.6em', lineHeight: 1 }}
+                  title={`Source ${citIdx + 1}: ${cit.docName}`}
+                >
+                  {citIdx + 1}
+                </button>
+              );
+            }
+          }
+          // Plain text segment — render through ReactMarkdown
+          return part ? <ReactMarkdown key={idx} components={{ p: ({ children }) => <span>{children}</span> }}>{part}</ReactMarkdown> : null;
+        })}
+      </div>
+    );
+  };
+
   return (
     <div>
-      {/* Main answer text */}
-      <div className={`prose prose-sm max-w-none prose-invert ${proseClass}`}>
-        <ReactMarkdown>{cleanedText}</ReactMarkdown>
-      </div>
+      {/* Main answer text with inline citation superscripts */}
+      {renderWithCitations()}
 
       {/* Numbered citation reference list */}
       {citations.length > 0 && (
